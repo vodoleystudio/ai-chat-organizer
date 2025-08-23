@@ -16,9 +16,9 @@
       case "perplexity":
         return 'a[href^="/search/"]';
       case "gemini":
-        return 'a[href*="/app"]';
+        return 'a[href^="/app"], a[href^="https://gemini.google.com/app"]';
       case "deepseek":
-        return 'a[href*="/chat"]';
+        return 'a[href*="/chat"], [data-chat-id], [data-conversation-id]';
       default:
         return 'a[href*="/c/"]';
     }
@@ -182,8 +182,16 @@
 
     for (const a of anchors) {
       let href = a.getAttribute("href") || "";
+      if (!href && SITE_ID === "deepseek") {
+        const cid =
+          a.dataset?.chatId ||
+          a.dataset?.conversationId ||
+          a.dataset?.cid ||
+          a.dataset?.id;
+        if (cid) href = `/a/chat#${cid}`;
+      }
       try {
-        if (!/^https?:\/\//.test(href))
+        if (href && !/^https?:\/\//.test(href))
           href = new URL(href, location.origin).toString();
       } catch {}
       try {
