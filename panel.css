@@ -172,7 +172,7 @@
 }
 
 .req.cgpt-current {
-  border: 3px dashed #fff !important;
+  border: 2px dashed #fff !important;
   background: #000 !important;
 }
 .req.dragging {
