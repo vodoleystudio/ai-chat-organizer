@@ -242,6 +242,53 @@
 
   setInterval(highlightSidebarChats, 2000);
 
+  async function removeChatFromGroupsById(chatId) {
+    const nurl = normalizeUrl(`https://chatgpt.com/c/${chatId}`);
+    const s = await getState();
+    let changed = false;
+    for (const folder of Object.keys(s.folders || {})) {
+      const arr = s.folders[folder] || [];
+      const filtered = arr.filter(
+        (it) => !(it?.type === "page" && normalizeUrl(it.url || "") === nurl),
+      );
+      if (filtered.length !== arr.length) {
+        s.folders[folder] = filtered;
+        changed = true;
+      }
+    }
+    if (changed) {
+      await setState(s);
+      stateCache = await getState();
+      highlightSidebarChats();
+    }
+  }
+
+  const origFetch = window.fetch;
+  window.fetch = (...args) => {
+    const [resource, config] = args;
+    const url = typeof resource === "string" ? resource : resource.url;
+    const method = (config?.method || "GET").toUpperCase();
+    const body = config?.body;
+    const p = origFetch(...args);
+    if (SITE_ID === "cgpt" && /\/conversation\/[^/?]+$/.test(url)) {
+      if (
+        method === "DELETE" ||
+        (method === "PATCH" &&
+          typeof body === "string" &&
+          body.includes('"is_visible":false'))
+      ) {
+        const idMatch = url.match(/conversation\/([^/?]+)/);
+        if (idMatch) {
+          const id = idMatch[1];
+          p.then((res) => {
+            if (res.ok) removeChatFromGroupsById(id);
+          });
+        }
+      }
+    }
+    return p;
+  };
+
   function extractUrlFromDt(dt) {
     if (!dt) return "";
     // when dragging <a>, browsers usually put text/uri-list
@@ -1030,7 +1077,7 @@
       function relabel() {
         const len = (s.folders[folderName] || []).length;
         if (len > 0) {
-          actionBtn.textContent = "Delete All";
+          actionBtn.textContent = "Clear All";
           actionBtn.title = "Remove all chats from this group";
         } else {
           actionBtn.textContent = "Delete";
@@ -1045,9 +1092,9 @@
         if (len > 0) {
           // CLEAR CHATS (styled dialog)
           const ok = await openConfirmDialog({
-            title: "Delete all chats",
+            title: "Clear all chats",
             message: `Remove all chats from “${folderName}”?`,
-            confirmText: "Delete",
+            confirmText: "Clear",
             cancelText: "Cancel",
             danger: true,
           });
@@ -1441,12 +1488,12 @@
     }
   });
 
-  // Delete all
+  // Clear all
   panel.querySelector("#clearBtn").addEventListener("click", async () => {
     const ok = await openConfirmDialog({
-      title: "Delete everything",
+      title: "Clear everything",
       message: "Delete all groups and chats? This cannot be undone.",
-      confirmText: "Delete All",
+      confirmText: "Clear All",
       cancelText: "Cancel",
       danger: true,
     });
