@@ -1,7 +1,30 @@
 (async () => {
   // ---- Storage helpers ----
-  const STORAGE_KEY = "cgpt_groups_v1";
-  const STORAGE_KEY_OPEN = "cgpt_groups_open_v1";
+  const SITE_ID = (() => {
+    const h = location.hostname;
+    if (h.includes("claude.ai")) return "claude";
+    if (h.includes("perplexity.ai")) return "perplexity";
+    if (h.includes("gemini.google.com")) return "gemini";
+    if (h.includes("deepseek.com")) return "deepseek";
+    return "cgpt";
+  })();
+
+  const CHAT_LINK_SELECTOR = (() => {
+    switch (SITE_ID) {
+      case "claude":
+        return 'a[href^="/chat/"]';
+      case "perplexity":
+        return 'a[href^="/search/"]';
+      case "gemini":
+        return 'a[href^="/app"]';
+      case "deepseek":
+        return 'a[href*="/chat"]';
+      default:
+        return 'a[href*="/c/"]';
+    }
+  })();
+  const STORAGE_KEY = `${SITE_ID}_groups_v1`;
+  const STORAGE_KEY_OPEN = `${SITE_ID}_groups_open_v1`;
 
   // Default structure for stored data.
   const DEFAULT_STATE = {
@@ -116,12 +139,20 @@
       const url = new URL(u);
       url.protocol = "https:";
       if (url.hostname === "chat.openai.com") url.hostname = "chatgpt.com";
-      url.search = "";
-      url.hash = "";
+      if (url.hostname === "www.perplexity.ai") url.hostname = "perplexity.ai";
+      if (url.hostname === "www.claude.ai") url.hostname = "claude.ai";
+      if (url.hostname === "www.deepseek.com") url.hostname = "deepseek.com";
+      // DeepSeek uses query parameters for chat IDs, and Gemini may use query or hash
+      if (SITE_ID !== "deepseek" && SITE_ID !== "gemini") {
+        url.search = "";
+      }
+      if (SITE_ID !== "gemini") {
+        url.hash = "";
+      }
       if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
         url.pathname = url.pathname.slice(0, -1);
       }
-      return url.origin + url.pathname;
+      return url.origin + url.pathname + url.search + url.hash;
     } catch (e) {
       return String(u).split("#")[0].split("?")[0].replace(/\/+$/, "");
     }
@@ -145,7 +176,7 @@
   }
 
   function getSidebarChats() {
-    const anchors = Array.from(document.querySelectorAll('a[href*="/c/"]'));
+    const anchors = Array.from(document.querySelectorAll(CHAT_LINK_SELECTOR));
     const seen = new Set();
     const res = [];
 
@@ -154,6 +185,15 @@
       try {
         if (!/^https?:\/\//.test(href))
           href = new URL(href, location.origin).toString();
+      } catch {}
+      try {
+        const u = new URL(href);
+        if (
+          (SITE_ID === "deepseek" && /^\/(?:a\/)?chat\/?$/.test(u.pathname) && !u.search) ||
+          (SITE_ID === "gemini" && /^\/app\/?$/.test(u.pathname) && !u.search && !u.hash)
+        ) {
+          continue;
+        }
       } catch {}
 
       // title: use aria-label/title, then own text node, then first child's text
@@ -184,6 +224,15 @@
 
       res.push({ title, desc, url: href, nurl });
     }
+    if (!res.length) {
+      const url = getCurrentUrl();
+      res.push({
+        title: getConversationTitleFallback(),
+        desc: "",
+        url,
+        nurl: normalizeUrl(url),
+      });
+    }
     return res;
   }
 
@@ -198,7 +247,7 @@
         }
       }
     }
-    const anchors = document.querySelectorAll('a[href*="/c/"]');
+    const anchors = document.querySelectorAll(CHAT_LINK_SELECTOR);
     for (const a of anchors) {
       let href = a.getAttribute("href") || "";
       try {
@@ -1388,7 +1437,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "chatgpt_groups_export.json";
+    a.download = `${SITE_ID}_groups_export.json`;
     a.click();
     URL.revokeObjectURL(url);
   });

@@ -15,10 +15,10 @@
   color: var(--text, #fff);
 }
 
-/* PANEL — 50px lower, does not cover the site's right scrollbar */
+/* PANEL offset from top to avoid covering page controls */
 .cgpt-panel {
   position: fixed;
-  top: 50px;
+  top: 65px;
   right: 16px;
   bottom: 0;
   left: auto;
