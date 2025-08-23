@@ -242,6 +242,62 @@
 
   setInterval(highlightSidebarChats, 2000);
 
+  // Remove chats from groups when they are deleted from the site sidebar
+  const pendingDeletedChats = new Set();
+  let deletedCleanupTimer = null;
+  function scheduleDeletedCleanup() {
+    if (deletedCleanupTimer) clearTimeout(deletedCleanupTimer);
+    deletedCleanupTimer = setTimeout(async () => {
+      deletedCleanupTimer = null;
+      if (!stateCache) return;
+      const existing = new Set(getSidebarChats().map((c) => c.nurl));
+      const s = stateCache;
+      let changed = false;
+      for (const nurl of pendingDeletedChats) {
+        if (existing.has(nurl)) continue;
+        for (const folderName of s.order) {
+          const arr = s.folders[folderName] || [];
+          const idx = arr.findIndex(
+            (it) =>
+              it &&
+              it.type === "page" &&
+              (it.nurl || normalizeUrl(it.url || "")) === nurl,
+          );
+          if (idx !== -1) {
+            arr.splice(idx, 1);
+            changed = true;
+          }
+        }
+      }
+      pendingDeletedChats.clear();
+      if (changed) {
+        await setState(s);
+        stateCache = await getState();
+        render(panel.querySelector("#searchInput").value || "");
+      }
+    }, 500);
+  }
+  const deletionObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.removedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+        const anchors = node.matches(CHAT_LINK_SELECTOR)
+          ? [node]
+          : Array.from(node.querySelectorAll?.(CHAT_LINK_SELECTOR) || []);
+        for (const a of anchors) {
+          let href = a.getAttribute("href") || "";
+          try {
+            if (!/^https?:\/\//.test(href))
+              href = new URL(href, location.origin).toString();
+          } catch {}
+          pendingDeletedChats.add(normalizeUrl(href));
+        }
+      }
+    }
+    if (pendingDeletedChats.size) scheduleDeletedCleanup();
+  });
+  deletionObserver.observe(document.body, { childList: true, subtree: true });
+
   function extractUrlFromDt(dt) {
     if (!dt) return "";
     // when dragging <a>, browsers usually put text/uri-list
