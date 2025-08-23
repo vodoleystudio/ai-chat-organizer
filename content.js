@@ -1096,6 +1096,12 @@
           const toFolder = ul.dataset.folder;
           const { fromFolder, fromIndex } = dragData;
 
+          // Calculate drop position BEFORE mutating arrays so that indexes
+          // reflect the pre-drag state. Otherwise moving an item to the end
+          // of the list may result in inserting it back to its original
+          // position.
+          const dropIndexFull = getDropIndexFull(ul, e.clientY);
+
           const src = s.folders[fromFolder]; // ← 's' from render
           const dst = s.folders[toFolder];
 
@@ -1104,8 +1110,6 @@
             hideMarker(ul);
             return;
           }
-
-          const dropIndexFull = getDropIndexFull(ul, e.clientY);
 
           if (fromFolder === toFolder) {
             const insertIdx =
