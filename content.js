@@ -142,12 +142,15 @@
       if (url.hostname === "www.perplexity.ai") url.hostname = "perplexity.ai";
       if (url.hostname === "www.claude.ai") url.hostname = "claude.ai";
       if (url.hostname === "www.deepseek.com") url.hostname = "deepseek.com";
-      url.search = "";
+      // DeepSeek and Gemini encode chat IDs in the query string, so we must keep it
+      if (SITE_ID !== "deepseek" && SITE_ID !== "gemini") {
+        url.search = "";
+      }
       url.hash = "";
       if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
         url.pathname = url.pathname.slice(0, -1);
       }
-      return url.origin + url.pathname;
+      return url.origin + url.pathname + url.search;
     } catch (e) {
       return String(u).split("#")[0].split("?")[0].replace(/\/+$/, "");
     }
@@ -180,6 +183,13 @@
       try {
         if (!/^https?:\/\//.test(href))
           href = new URL(href, location.origin).toString();
+      } catch {}
+      try {
+        const u = new URL(href);
+        if ((SITE_ID === "deepseek" && /^\/chat\/?$/.test(u.pathname) && !u.search) ||
+            (SITE_ID === "gemini" && /^\/app\/?$/.test(u.pathname) && !u.search)) {
+          continue;
+        }
       } catch {}
 
       // title: use aria-label/title, then own text node, then first child's text
