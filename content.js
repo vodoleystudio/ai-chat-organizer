@@ -16,9 +16,9 @@
       case "perplexity":
         return 'a[href^="/search/"]';
       case "gemini":
-        return 'a[href^="/app/"]';
+        return 'a[href^="/app"]';
       case "deepseek":
-        return 'a[href^="/chat/"]';
+        return 'a[href*="/chat"]';
       default:
         return 'a[href*="/c/"]';
     }
@@ -142,15 +142,17 @@
       if (url.hostname === "www.perplexity.ai") url.hostname = "perplexity.ai";
       if (url.hostname === "www.claude.ai") url.hostname = "claude.ai";
       if (url.hostname === "www.deepseek.com") url.hostname = "deepseek.com";
-      // DeepSeek and Gemini encode chat IDs in the query string, so we must keep it
+      // DeepSeek uses query parameters for chat IDs, and Gemini may use query or hash
       if (SITE_ID !== "deepseek" && SITE_ID !== "gemini") {
         url.search = "";
       }
-      url.hash = "";
+      if (SITE_ID !== "gemini") {
+        url.hash = "";
+      }
       if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
         url.pathname = url.pathname.slice(0, -1);
       }
-      return url.origin + url.pathname + url.search;
+      return url.origin + url.pathname + url.search + url.hash;
     } catch (e) {
       return String(u).split("#")[0].split("?")[0].replace(/\/+$/, "");
     }
@@ -186,8 +188,10 @@
       } catch {}
       try {
         const u = new URL(href);
-        if ((SITE_ID === "deepseek" && /^\/chat\/?$/.test(u.pathname) && !u.search) ||
-            (SITE_ID === "gemini" && /^\/app\/?$/.test(u.pathname) && !u.search)) {
+        if (
+          (SITE_ID === "deepseek" && /^\/(?:a\/)?chat\/?$/.test(u.pathname) && !u.search) ||
+          (SITE_ID === "gemini" && /^\/app\/?$/.test(u.pathname) && !u.search && !u.hash)
+        ) {
           continue;
         }
       } catch {}
