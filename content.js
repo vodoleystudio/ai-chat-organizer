@@ -5,7 +5,23 @@
     if (h.includes("claude.ai")) return "claude";
     if (h.includes("perplexity.ai")) return "perplexity";
     if (h.includes("gemini.google.com")) return "gemini";
+    if (h.includes("deepseek.com")) return "deepseek";
     return "cgpt";
+  })();
+
+  const CHAT_LINK_SELECTOR = (() => {
+    switch (SITE_ID) {
+      case "claude":
+        return 'a[href^="/chat/"]';
+      case "perplexity":
+        return 'a[href^="/search/"]';
+      case "gemini":
+        return 'a[href^="/app/"]';
+      case "deepseek":
+        return 'a[href^="/chat/"]';
+      default:
+        return 'a[href*="/c/"]';
+    }
   })();
   const STORAGE_KEY = `${SITE_ID}_groups_v1`;
   const STORAGE_KEY_OPEN = `${SITE_ID}_groups_open_v1`;
@@ -125,6 +141,7 @@
       if (url.hostname === "chat.openai.com") url.hostname = "chatgpt.com";
       if (url.hostname === "www.perplexity.ai") url.hostname = "perplexity.ai";
       if (url.hostname === "www.claude.ai") url.hostname = "claude.ai";
+      if (url.hostname === "www.deepseek.com") url.hostname = "deepseek.com";
       url.search = "";
       url.hash = "";
       if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
@@ -154,7 +171,7 @@
   }
 
   function getSidebarChats() {
-    const anchors = Array.from(document.querySelectorAll('a[href*="/c/"]'));
+    const anchors = Array.from(document.querySelectorAll(CHAT_LINK_SELECTOR));
     const seen = new Set();
     const res = [];
 
@@ -193,6 +210,15 @@
 
       res.push({ title, desc, url: href, nurl });
     }
+    if (!res.length) {
+      const url = getCurrentUrl();
+      res.push({
+        title: getConversationTitleFallback(),
+        desc: "",
+        url,
+        nurl: normalizeUrl(url),
+      });
+    }
     return res;
   }
 
@@ -207,7 +233,7 @@
         }
       }
     }
-    const anchors = document.querySelectorAll('a[href*="/c/"]');
+    const anchors = document.querySelectorAll(CHAT_LINK_SELECTOR);
     for (const a of anchors) {
       let href = a.getAttribute("href") || "";
       try {
