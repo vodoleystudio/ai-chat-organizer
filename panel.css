@@ -170,6 +170,11 @@
   cursor: grab;
   padding: 8px;
 }
+
+.req.cgpt-current {
+  border: 3px dashed #fff !important;
+  background: #000 !important;
+}
 .req.dragging {
   opacity: 0.6;
 }

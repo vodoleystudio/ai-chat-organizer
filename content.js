@@ -226,6 +226,7 @@
         }
       }
     }
+    const current = getCurrentCanonicalUrl();
     const anchors = document.querySelectorAll(CHAT_LINK_SELECTOR);
     for (const a of anchors) {
       let href = a.getAttribute("href") || "";
@@ -236,6 +237,8 @@
       const nurl = normalizeUrl(href);
       if (saved.has(nurl)) a.classList.add("cgpt-chat-saved");
       else a.classList.remove("cgpt-chat-saved");
+      if (nurl === current) a.classList.add("cgpt-chat-current");
+      else a.classList.remove("cgpt-chat-current");
     }
   }
 
@@ -688,7 +691,10 @@
   shadow.appendChild(style);
 
   const globalStyle = document.createElement("style");
-  globalStyle.textContent = `.cgpt-chat-saved { background: #214b29 !important; }`;
+  globalStyle.textContent = `
+    .cgpt-chat-saved { background: #214b29 !important; }
+    .cgpt-chat-current { outline: 3px dashed #fff !important; }
+  `;
   document.head.appendChild(globalStyle);
 
   // Toggle button
@@ -889,6 +895,7 @@
     body.innerHTML = "";
     const s = stateCache;
     const q = filterText.trim().toLowerCase();
+    const current = getCurrentCanonicalUrl();
 
     s.order.forEach((folderName) => {
       const list = s.folders[folderName] || [];
@@ -1376,6 +1383,9 @@
             render(q);
           },
         );
+
+        const itemNurl = item.nurl || normalizeUrl(item.url || "");
+        if (itemNurl === current) li.classList.add("cgpt-current");
 
         ul.appendChild(li);
       });
