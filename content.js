@@ -735,6 +735,17 @@
   document.documentElement.appendChild(rootContainer);
   const shadow = rootContainer.attachShadow({ mode: "open" });
 
+  function trapKey(e) {
+    if (rootContainer.contains(e.target)) {
+      e.stopPropagation();
+      const t = e.target;
+      if (t && typeof t.focus === "function") t.focus();
+    }
+  }
+  ["keydown", "keypress", "keyup"].forEach((evt) =>
+    document.addEventListener(evt, trapKey, true),
+  );
+
   const wrap = document.createElement("div");
   shadow.appendChild(wrap);
 
