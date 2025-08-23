@@ -12,5 +12,11 @@
       "js": ["content.js"],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["panel.html", "panel.css"],
+      "matches": ["https://chatgpt.com/*"]
+    }
   ]
 }

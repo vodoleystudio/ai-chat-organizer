@@ -1,0 +1,439 @@
+  /* ===== THEME ===== */
+  :host{
+    --bg:#1b1b1b;        /* panel and card background */
+    --surface:#1b1b1b;   /* no longer green */
+    --surface-2:#2a2a2a; /* dark buttons/fields */
+    --border:#ffffff;
+    --text:#ffffff;
+    --text-weak:#e0f2eb;
+    --accent:#ffffff;
+    --shadow:rgba(0,0,0,.35);
+  }
+
+  .cgpt-panel, .cgpt-panel * { color:var(--text, #fff); }
+
+  /* PANEL — 50px lower, does not cover the site's right scrollbar */
+  .cgpt-panel{
+    position:fixed; top:50px; right:16px; bottom:0; left:auto; width:360px;
+    background:var(--bg, #1b1b1b) !important;
+    border-left: none !important;   /* removed white stripe */
+    box-shadow:-8px 0 24px var(--shadow, rgba(0,0,0,.35));
+    transform:translateX(0); transition:transform .2s ease;
+    pointer-events:auto; display:flex; flex-direction:column;
+    font:13px/1.4 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    padding-top:0;
+    padding-bottom:70px;
+  }
+/* shift further right for gap + shadow */
+.cgpt-panel.hidden{
+  transform: translateX(calc(100% + 24px)); /* 16px gap + ~8px shadow */
+  box-shadow: none;                          /* remove shadow just in case */
+}
+
+
+  /* Header */
+  .cgpt-header{
+    background:var(--surface, #1b1b1b);
+    padding:8px;
+  }
+  .cgpt-actions{
+    display:grid;
+    grid-template-columns: max-content 1fr max-content;
+    gap:8px; align-items:center;
+  }
+
+  /* Search */
+  .header-search{
+    min-width:0; width:100%; box-sizing:border-box;
+    padding:8px 10px;
+    border-radius:10px;
+    background:var(--surface-2, #2a2a2a) !important;
+    color:var(--text, #fff) !important;
+    border:1px solid var(--border, #ffffff) !important;
+  }
+  .header-search::placeholder{ color:var(--text-weak, #cfe); }
+
+  /* Body */
+  .cgpt-body{ flex:1; overflow:auto; padding:10px 10px 12px; }
+  .cgpt-body::-webkit-scrollbar{ width:10px; }
+  .cgpt-body::-webkit-scrollbar-track{ background:var(--bg, #1b1b1b); }
+  .cgpt-body::-webkit-scrollbar-thumb{ background:var(--surface-2, #2a2a2a); border:2px solid var(--bg, #1b1b1b); border-radius:8px; }
+
+  /* Group card */
+  .folder{
+    border:1px solid var(--border, #ffffff) !important; border-radius:12px;
+    background:var(--surface, #1b1b1b) !important; margin-bottom:12px; overflow:hidden;
+  }
+
+  /* Group header — name + color + Add chat + Delete on one line */
+  .folder-head{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) max-content max-content max-content; /* name | color | Add | Delete */
+    gap:8px; align-items:center; background:var(--surface, #1b1b1b);
+    padding:8px 10px; border-bottom:1px solid var(--border, #fff) !important;
+  }
+  .folder-head .name-input{
+    width:100%; min-width:0;
+    background:transparent; border:none; outline:none;
+    font-weight:700; font-size:13px; color:var(--text, #fff);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    cursor:text;
+  }
+/* Applies ONLY to direct input in .folder-head,
+   does not touch input wrapped in .color-ring */
+.folder-head > input[type="color"]{
+  -webkit-appearance:none; appearance:none;
+  width:16px; height:16px; padding:0; border:none; border-radius:50%;
+  overflow:hidden; cursor:pointer;
+}
+.folder-head > input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+.folder-head > input[type="color"]::-webkit-color-swatch{ border:none; border-radius:50%; }
+.folder-head > input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
+
+  /* Item list */
+  .req-list{ list-style:none; margin:0; padding:8px; display:flex; flex-direction:column; gap:8px; }
+  .req{
+    border:1px dashed var(--border, #ffffff) !important; border-radius:10px;
+    background:var(--surface-2, #2a2a2a) !important; cursor:grab; padding:8px;
+  }
+  .req.dragging{ opacity:.6; }
+  /* Item title — full width */
+  .req .title{
+    font-size:12px; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    width:100%;
+  }
+  /* Bottom row of item: Open (left, smaller), date (center, 11px), Delete (right) */
+  .req .row-actions{
+    margin-top:6px;
+    display:grid;
+    grid-template-columns: max-content 1fr max-content;
+    align-items:center; gap:10px;
+  }
+  .open-btn{
+    padding:4px 8px;          /* smaller */
+    min-width:72px;           /* smaller */
+    font-size:11px;           /* more compact */
+    border-radius:10px;
+    background:var(--surface, #1b1b1b);
+    color:var(--text, #fff);
+    border:1px solid var(--border, #fff);
+    text-decoration:none; display:inline-block; text-align:center;
+    line-height:1.2;
+  }
+  .date{
+    font-size:11px;           /* requirement */
+    color:var(--text-weak, #e0f2eb);
+    text-align:center;
+  }
+  .del-btn{
+    padding:4px 8px; min-width:48px; font-size:11px;
+    border-radius:10px; background:#8a2d2d; border:1px solid var(--border, #fff); color:#fff;
+    cursor:pointer;
+  }
+
+  /* Common buttons */
+  button,.btn,label.like-button{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:8px 12px; border-radius:10px;
+    background:var(--surface-2, #2a2a2a); color:var(--text, #fff);
+    border:1px solid var(--border, #ffffff) !important; cursor:pointer; user-select:none; text-align:center;
+    white-space:nowrap; min-width:90px; box-sizing:border-box;
+  }
+  button:hover,.btn:hover,label.like-button:hover{ filter:brightness(1.06); }
+
+  /* Footer — centered; Import = Export in size and height */
+  .footer{
+    position:absolute; left:0; right:0; bottom:10px;
+    padding:10px; background:var(--surface, #1b1b1b);
+    display:flex; gap:8px; align-items:center; justify-content:center;
+  }
+  #importLabel{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:110px; height:33px;          /* matches Export */
+    padding:8px 12px;                      /* matches Export */
+    border:1px solid var(--border, #ffffff) !important;
+    background:var(--surface-2, #2a2a2a);
+  }
+  .footer #exportBtn,
+  .footer #importLabel,
+  .footer #clearBtn{
+    min-width:110px;
+  }
+
+  .drop-target{ outline:2px dashed var(--accent, #ffffff); outline-offset:2px; }
+  
+  .icon-btn{
+  min-width:0 !important;
+  width:22px;                   /* was 28px */
+  height:22px;                  /* was 28px */
+  padding:0; line-height:1; font-size:14px;  /* was 16px */
+  border-radius:8px;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+
+/* ===== MODAL STYLE (shared for rename/add) ===== */
+.cgpt-modal-overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.55);
+  display:flex; align-items:center; justify-content:center;
+  z-index:2147483647;
+}
+.cgpt-modal{
+  background:#1f1f1f; color:#fff;
+  border:1px solid #ffffff; border-radius:12px;
+  width:min(92vw, 480px);
+  padding:14px;
+  box-shadow:0 16px 48px rgba(0,0,0,.45);
+  font:13px/1.4 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.cgpt-modal h4{ margin:0 0 10px 0; font-size:14px; }
+.cgpt-modal .row{ display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.cgpt-modal .row label{ display:flex; gap:8px; align-items:center; }
+.cgpt-modal input[type="text"],
+.cgpt-modal input[type="search"],
+.cgpt-modal select{
+  background:#2a2a2a; color:#fff;
+  border:1px solid #ffffff; border-radius:10px;
+  padding:8px 10px; width:100%; box-sizing:border-box;
+}
+.cgpt-modal select option{ background:#2a2a2a; color:#fff; }
+.cgpt-modal .hint{ color:#cfd3dc; font-size:12px; }
+.cgpt-modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+.cgpt-modal .actions button{
+  padding:8px 12px; border-radius:10px;
+  background:#2a2a2a; color:#fff; border:1px solid #ffffff; min-width:100px;
+}
+
+/* color picker circle in modal — same as in header */
+.cgpt-modal input[type="color"]{
+  -webkit-appearance:none; appearance:none;
+  width:16px; height:16px; padding:0; border:none; border-radius:50%;
+  overflow:hidden; cursor:pointer;
+}
+.cgpt-modal input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+.cgpt-modal input[type="color"]::-webkit-color-swatch{ border:none; border-radius:50%; }
+.cgpt-modal input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
+
+
+/* === FIX: round button opening the panel === */
+.cgpt-toggle{
+  position: fixed;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;     /* override general min-width:90px */
+  padding: 0 !important;
+  box-sizing: border-box !important;
+
+  border-radius: 50% !important;
+  border: 1px solid var(--border, #fff) !important;
+  background: transparent;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 22px;
+  cursor: pointer;
+
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cgpt-toggle:active { transform: translateY(-50%) scale(0.96); }
+
+/* just in case — prevent global button rule interference */
+button.cgpt-toggle{ min-width: 48px !important; }
+
+
+
+.cgpt-panel{
+  right: 16px; /* as before */
+}
+
+.folder-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px 6px 0 0;
+}
+
+
+/* folder name with border */
+.folder-head .name-input{
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  padding: 4px 8px;
+border: 1px solid currentColor !important;
+  border-radius: 6px;
+  background: transparent !important;     /* background from .folder-head */
+  color: inherit;
+  font-weight: 700;
+  font-size: 14px;
+}
+.folder-head .name-input:focus{
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.15);
+}
+
+/* style color input separately so the general rule doesn't break it */
+.folder-head input[type="color"]{
+  -webkit-appearance:none; appearance:none;
+  width:16px; height:16px; padding:0; border:none; border-radius:50%;
+  overflow:hidden; cursor:pointer;
+}
+.folder-head input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+.folder-head input[type="color"]::-webkit-color-swatch{ border:none; border-radius:50%; }
+.folder-head input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
+
+
+/* Visible circular ring, strictly square */
+.color-ring{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:22px;
+  height:22px;
+  aspect-ratio: 1 / 1;        /* prevents turning into an oval */
+  flex: 0 0 22px;             /* prevents stretching in flex/grid */
+border: 1.5px solid currentColor; /* was #ffffff */
+  border-radius:50%;          /* circle */
+  padding:2px;                /* ring thickness */
+  overflow:hidden;
+  cursor:pointer;
+  line-height:0;              /* remove line-height influence */
+  color: inherit;
+}
+
+/* Colored circle inside ring fills it completely */
+.color-ring input[type="color"]{
+  -webkit-appearance:none; appearance:none;
+  display:block;
+  width:100% !important;
+  height:100% !important;
+  border:none !important;
+  padding:0 !important;
+  margin:0 !important;
+  background:transparent;
+  border-radius:50%;
+}
+.color-ring input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+.color-ring input[type="color"]::-webkit-color-swatch{ border:none; border-radius:50%; }
+.color-ring input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
+
+/* hidden list of folder requests */
+.req-list.collapsed { display: none; }
+
+/* small round arrow button in header */
+.collapse-btn{
+  min-width: 22px !important;
+  width: 22px; height: 22px;
+  padding: 0; line-height: 1;
+  border-radius: 50%;
+  border: 1px solid var(--border,#fff);
+  background: var(--surface-2,#2a2a2a);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; cursor: pointer;
+}
+.collapse-btn:hover{ filter:brightness(1.06); }
+
+/* when folder collapsed — round bottom of header */
+.folder.collapsed .folder-head{ border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+
+
+
+/* Collapse button without borders/background, only large triangle */
+.folder-head .collapse-btn{
+  all: unset;                 /* remove default styles and our button rule */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 30px;            /* triangle size */
+  line-height: 1;
+  padding: 0;             /* small grab area for click */
+  flex: 0 0 auto;
+  color: inherit;             /* inherit header text color */
+  border:none !important;
+}
+.folder-head .collapse-btn:focus{ outline: none; }
+.folder-head .collapse-btn:hover{ transform: scale(1.1); }
+
+
+/* visual cues during dnd */
+.folder.drop-before{ box-shadow: inset 0 6px 0 0 var(--accent,#fff); }
+.folder.drop-after{  box-shadow: inset 0 -6px 0 0 var(--accent,#fff); }
+.folder.dragging-folder{ opacity: .6; }
+
+.req-list.drop-target{ outline:2px dashed var(--accent,#fff); outline-offset:2px; }
+.req.dragging{ opacity:.6; }
+
+
+/* Empty drop zone */
+.req-list{
+  min-height: 4px;            /* ensure drop zone always exists */
+}
+.req-list.empty{
+  display:block;
+  padding:16px;
+  min-height:24px;            /* convenient drop target */
+  border:1px dashed var(--border, #ffffff);
+  border-radius:10px;
+  background:transparent;
+  position:relative;
+}
+.req-list.empty::after{
+  content:"Drag here";
+  display:block;
+  text-align:center;
+  opacity:.6;
+  font-size:12px;
+  pointer-events:none;        /* does not intercept mouse events */
+}
+
+/* Smooth shifts when marker appears */
+.req-list .req{
+  transition: margin .12s ease, transform .12s ease;
+}
+
+/* Animated insertion marker */
+.req-list .drop-marker{
+  list-style: none;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  transition: height .12s ease, margin .12s ease;
+  position: relative;
+}
+.req-list .drop-marker.active{
+  height: 12px;           /* gap */
+  margin: 4px 0;
+}
+.req-list .drop-marker::after{
+  content: "";
+  position: absolute;
+  left: 4px; right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: var(--accent, #fff);
+  opacity: .8;
+  border-radius: 2px;
+}
+.req-list.collapsed .drop-marker{ display:none; }
+
+/* dangerous action in modal */
+.cgpt-modal .actions .danger{
+  background:#8a2d2d; 
+  border:1px solid #ffffff !important; 
+  color:#fff;
+}
+.cgpt-modal .actions .danger:hover{ filter:brightness(1.06); }
