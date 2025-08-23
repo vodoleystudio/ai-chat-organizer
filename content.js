@@ -5,40 +5,36 @@
 
 
 
-  async function getOpenState() {
+  // Default structure for stored data.
+  const DEFAULT_STATE = {
+    folders: {
+      "🧠 Ideas": [],
+      "📦 Draft": []
+    },
+    order: ["🧠 Ideas", "📦 Draft"],
+    collapsed: {}
+  };
+
+  // Generic wrappers around chrome.storage.local
+  function storageGet(key, defaultValue) {
     return new Promise((resolve) => {
-      chrome.storage.local.get(STORAGE_KEY_OPEN, (data) => {
-        resolve(!!data[STORAGE_KEY_OPEN]); // true/false
+      chrome.storage.local.get(key, (data) => {
+        const value = data[key];
+        resolve(value === undefined ? defaultValue : value);
       });
-    });
-  }
-  async function setOpenState(isOpen) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ [STORAGE_KEY_OPEN]: !!isOpen }, resolve);
     });
   }
 
-  async function getState() {
+  function storageSet(key, value) {
     return new Promise((resolve) => {
-      chrome.storage.local.get(STORAGE_KEY, (data) => {
-        resolve(
-          data[STORAGE_KEY] || {
-            folders: {
-              "🧠 Ideas": [],
-              "📦 Draft": []
-            },
-            order: ["🧠 Ideas", "📦 Draft"],
-			collapsed: {}
-          }
-        );
-      });
+      chrome.storage.local.set({ [key]: value }, resolve);
     });
   }
-  async function setState(state) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ [STORAGE_KEY]: state }, resolve);
-    });
-  }
+
+  const getOpenState = () => storageGet(STORAGE_KEY_OPEN, false);
+  const setOpenState = (isOpen) => storageSet(STORAGE_KEY_OPEN, !!isOpen);
+  const getState = () => storageGet(STORAGE_KEY, DEFAULT_STATE);
+  const setState = (state) => storageSet(STORAGE_KEY, state);
 
   // ---- Utilities ----
   const nowTs = () => Date.now();
