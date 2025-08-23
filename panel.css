@@ -100,6 +100,9 @@
   background: var(--surface, #1b1b1b) !important;
   margin-bottom: 12px;
   overflow: hidden;
+  transition:
+    margin 0.12s ease,
+    transform 0.12s ease;
 }
 
 /* Group header — name + color + Add chat + Delete on one line */
@@ -119,7 +122,7 @@
   border: none;
   outline: none;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text, #fff);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -201,7 +204,7 @@
   line-height: 1.2;
 }
 .date {
-  font-size: 11px; /* requirement */
+  font-size: 9px; /* requirement */
   color: var(--text-weak, #e0f2eb);
   text-align: center;
 }
@@ -446,7 +449,7 @@ button.cgpt-toggle {
   background: transparent !important; /* background from .folder-head */
   color: inherit;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
 }
 .folder-head .name-input:focus {
   outline: none;
@@ -653,6 +656,33 @@ button.cgpt-toggle {
 }
 .req-list.collapsed .drop-marker {
   display: none;
+}
+
+/* Smooth shifts when folder marker appears */
+.folder-drop-marker {
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  transition:
+    height 0.12s ease,
+    margin 0.12s ease;
+  position: relative;
+}
+.folder-drop-marker.active {
+  height: 12px;
+  margin: 6px 0;
+}
+.folder-drop-marker::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: var(--accent, #fff);
+  opacity: 0.8;
+  border-radius: 2px;
 }
 
 /* dangerous action in modal */
