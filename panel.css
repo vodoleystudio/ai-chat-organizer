@@ -170,6 +170,9 @@
   cursor: grab;
   padding: 8px;
 }
+.req.current {
+  border: 2px dashed var(--border, #ffffff) !important;
+}
 .req.dragging {
   opacity: 0.6;
 }
@@ -202,6 +205,18 @@
   display: inline-block;
   text-align: center;
   line-height: 1.2;
+}
+.current-label {
+  padding: 4px 8px;
+  min-width: 72px;
+  font-size: 11px;
+  border-radius: 10px;
+  background: var(--surface, #1b1b1b);
+  color: var(--text, #fff);
+  border: 1px solid var(--border, #fff);
+  text-align: center;
+  line-height: 1.2;
+  display: inline-block;
 }
 .date {
   font-size: 9px; /* requirement */

@@ -234,7 +234,10 @@
           href = new URL(href, location.origin).toString();
       } catch {}
       const nurl = normalizeUrl(href);
-      if (saved.has(nurl)) a.classList.add("cgpt-chat-saved");
+      const isActive =
+        a.getAttribute("aria-current") === "page" ||
+        a.getAttribute("data-selected") === "true";
+      if (saved.has(nurl) && !isActive) a.classList.add("cgpt-chat-saved");
       else a.classList.remove("cgpt-chat-saved");
     }
   }
@@ -889,6 +892,7 @@
     body.innerHTML = "";
     const s = stateCache;
     const q = filterText.trim().toLowerCase();
+    const currentNurl = getCurrentCanonicalUrl();
 
     s.order.forEach((folderName) => {
       const list = s.folders[folderName] || [];
@@ -1332,33 +1336,44 @@
         const titleSafe = (item && (item.text || item.title)) || "(untitled)";
         const dateSafe = item && item.ts ? fmtDate(item.ts) : "";
         const urlSafe = item?.url || item?.nurl || "#";
+        const itemNurl = item?.nurl || normalizeUrl(item?.url || "");
+        const isCurrent = itemNurl && itemNurl === currentNurl;
+        if (isCurrent) li.classList.add("current");
 
         li.innerHTML = `
   <div class="title">${titleSafe}</div>
   <div class="row-actions">
-    <a class="open-btn" href="${urlSafe}" target="_blank" rel="noopener">Open chat</a>
+    ${
+      isCurrent
+        ? '<span class="current-label">Current</span>'
+        : `<a class="open-btn" href="${urlSafe}" target="_blank" rel="noopener">Open chat</a>`
+    }
     <span class="date">${dateSafe}</span>
     <button class="del-btn" data-act="del">Delete</button>
   </div>
 `;
 
-        // to avoid link click conflicting with dnd
-        const openA = li.querySelector(".open-btn");
-        openA.draggable = false; // otherwise sometimes drags li
-        openA.addEventListener("mousedown", (e) => e.stopPropagation());
+        if (!isCurrent) {
+          // to avoid link click conflicting with dnd
+          const openA = li.querySelector(".open-btn");
+          if (openA) {
+            openA.draggable = false; // otherwise sometimes drags li
+            openA.addEventListener("mousedown", (e) => e.stopPropagation());
 
-        // open in this tab with normal click; new tab with Ctrl/Cmd/middle click
-        openA.addEventListener("click", (e) => {
-          const url = item?.url || item?.nurl;
-          if (!url) return;
+            // open in this tab with normal click; new tab with Ctrl/Cmd/middle click
+            openA.addEventListener("click", (e) => {
+              const url = item?.url || item?.nurl;
+              if (!url) return;
 
-          // if user chose new tab (Ctrl/Cmd/middle) let browser handle
-          if (e.metaKey || e.ctrlKey || e.button === 1) return;
+              // if user chose new tab (Ctrl/Cmd/middle) let browser handle
+              if (e.metaKey || e.ctrlKey || e.button === 1) return;
 
-          // otherwise open in same tab
-          e.preventDefault();
-          location.href = url;
-        });
+              // otherwise open in same tab
+              e.preventDefault();
+              location.href = url;
+            });
+          }
+        }
 
         // deletion
         li.querySelector('[data-act="del"]').addEventListener(
