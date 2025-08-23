@@ -122,7 +122,7 @@
   border: none;
   outline: none;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text, #fff);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -204,7 +204,7 @@
   line-height: 1.2;
 }
 .date {
-  font-size: 10px; /* requirement */
+  font-size: 9px; /* requirement */
   color: var(--text-weak, #e0f2eb);
   text-align: center;
 }
@@ -449,7 +449,7 @@ button.cgpt-toggle {
   background: transparent !important; /* background from .folder-head */
   color: inherit;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
 }
 .folder-head .name-input:focus {
   outline: none;

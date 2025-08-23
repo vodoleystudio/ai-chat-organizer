@@ -786,14 +786,12 @@
   bodyEl.addEventListener("drop", async (e) => {
     if (!folderDrag || dragData) return;
     e.preventDefault();
+    const toIdx = getFolderDropIndex(e.clientY);
     hideFolderMarker();
     const s = stateCache;
     const fromIdx = s.order.indexOf(folderDrag.fromName);
-    const toIdxRaw = getFolderDropIndex(e.clientY);
-    let toIdx = toIdxRaw;
-    if (fromIdx === toIdx || fromIdx + 1 === toIdx) return;
+    if (fromIdx === toIdx) return;
     const [moved] = s.order.splice(fromIdx, 1);
-    if (fromIdx < toIdx) toIdx--;
     s.order.splice(toIdx, 0, moved);
     await setState(s);
     stateCache = await getState();
