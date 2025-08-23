@@ -92,14 +92,14 @@
       if (e.key === "Enter")  { e.preventDefault(); close(true); }
     });
 
-    // фокус на «ОК»
+    // focus on "OK"
     setTimeout(() => btnOk.focus(), 0);
   });
 }
 
 
   function getConversationTitleFallback() {
-    return document.title.replace(/\s+\|\s+ChatGPT.*$/i, "").trim() || "Без названия";
+    return document.title.replace(/\s+\|\s+ChatGPT.*$/i, "").trim() || "Untitled";
   }
 
   function normalizeUrl(u) {
@@ -118,14 +118,14 @@
     }
   }
   
-  // склеиваем пробелы
+  // collapse whitespace
 function norm(s){ return (s||"").replace(/\s+/g," ").trim(); }
 function cutAfterSep(s){
   const str = norm(s);
-  const m = str.match(/\s(?:–|—|-|:)\s/); // первый разделитель " — " и т.п.
+  const m = str.match(/\s(?:–|—|-|:)\s/); // first separator like " — "
   return m ? str.slice(0, m.index) : str;
 }
-// только собственные текстовые узлы <a> (без детей/соседей)
+// only direct text nodes of <a> (no children/siblings)
 function ownText(el){
   return Array.from(el.childNodes)
     .filter(n => n.nodeType === Node.TEXT_NODE)
@@ -142,7 +142,7 @@ function getSidebarChats() {
     let href = a.getAttribute("href") || "";
     try { if (!/^https?:\/\//.test(href)) href = new URL(href, location.origin).toString(); } catch {}
 
-    // title: берём aria-label/title, затем собственный текст узла, затем текст первого ребёнка
+    // title: use aria-label/title, then own text node, then first child's text
     const rawTitle =
       a.getAttribute("aria-label") ||
       a.getAttribute("title") ||
@@ -153,7 +153,7 @@ function getSidebarChats() {
     let title = cutAfterSep(rawTitle);
     title = norm(title);
 
-    // desc: ТОЛЬКО атрибуты (никаких nextSibling/parent.querySelector)
+    // desc: attributes only (no nextSibling/parent.querySelector)
     let desc = norm(
       a.getAttribute("aria-description") ||
       a.getAttribute("data-description") ||
@@ -175,12 +175,12 @@ function getSidebarChats() {
 
 function extractUrlFromDt(dt){
   if (!dt) return "";
-  // при перетаскивании <a> браузер обычно кладёт text/uri-list
+  // when dragging <a>, browsers usually put text/uri-list
   if (Array.from(dt.types || []).includes("text/uri-list")) {
     const u = dt.getData("text/uri-list").split(/\r?\n/)[0].trim();
     if (u) return u;
   }
-  // запасной вариант — text/plain
+  // fallback — text/plain
   const t = (dt.getData("text/plain") || "").trim();
   try { return t && new URL(t) ? t : ""; } catch { return ""; }
 }
@@ -203,18 +203,18 @@ function openAddRequestDialog(targetFolder) {
   const modal = document.createElement("div");
   modal.className = "cgpt-modal";
   modal.innerHTML = `
-    <h4>Добавить чат в «${targetFolder}»</h4>
+    <h4>Add chat to “${targetFolder}”</h4>
     <div class="row">
-      <input type="search" id="chatSearch" placeholder="Поиск по названию или описанию...">
+      <input type="search" id="chatSearch" placeholder="Search by title or description...">
       <div class="hint">
-        Пояснения: <span style="background:#5a2f00;color:#fff;border-radius:4px;padding:1px 6px">оранжевый</span> — уже в этой группе,
-        <span style="background:#4d4a00;color:#fff;border-radius:4px;padding:1px 6px">жёлтый</span> — уже в другой группе.
+        Legend: <span style="background:#5a2f00;color:#fff;border-radius:4px;padding:1px 6px">orange</span> — already in this group,
+        <span style="background:#4d4a00;color:#fff;border-radius:4px;padding:1px 6px">yellow</span> — already in another group.
       </div>
       <select id="chatSelect" size="8" style="background:#2a2a2a;color:#fff"></select>
     </div>
     <div class="actions">
-      <button id="addBtn">Добавить</button>
-      <button id="cancelBtn">Отмена</button>
+      <button id="addBtn">Add</button>
+      <button id="cancelBtn">Cancel</button>
     </div>
   `;
   overlay.appendChild(modal);
@@ -225,11 +225,11 @@ function openAddRequestDialog(targetFolder) {
   const cancelBtn = modal.querySelector("#cancelBtn");
   const addBtn = modal.querySelector("#addBtn");
 
-  // цвета для подсветки
+  // highlight colors
   const COLOR_DEFAULT_BG = "#2a2a2a";
   const COLOR_DEFAULT_FG = "#ffffff";
-  const COLOR_HERE_BG    = "#5a2f00"; // тёмно-оранжевый
-  const COLOR_ELSE_BG    = "#4d4a00"; // тёмно-жёлтый
+  const COLOR_HERE_BG    = "#5a2f00"; // dark orange
+  const COLOR_ELSE_BG    = "#4d4a00"; // dark yellow
 
   function renderOptions(list) {
     selectEl.innerHTML = "";
@@ -237,20 +237,20 @@ function openAddRequestDialog(targetFolder) {
     list.forEach((it) => {
       const opt = document.createElement("option");
 
-      // Базовая подпись
+      // Base label
       const base = it.desc ? `${it.title} — ${it.desc}` : it.title;
 
-      // Где лежит этот чат сейчас?
+      // Where is this chat currently?
       const loc = findSavedPage(it.url); // { folderName, index } | null
       const inSomeFolder = !!loc;
       const inThisFolder = loc && loc.folderName === targetFolder;
 
-      // Текст с пометками о размещении
+      // Text with placement notes
       let suffix = "";
       if (inThisFolder) {
-        suffix = " [уже здесь]";
+        suffix = " [already here]";
       } else if (inSomeFolder) {
-        suffix = ` (в группе: ${loc.folderName})`;
+        suffix = ` (in group: ${loc.folderName})`;
       }
 
       opt.value = it.url;
@@ -258,15 +258,15 @@ function openAddRequestDialog(targetFolder) {
       opt.dataset.title = it.title;
       if (loc) opt.dataset.inFolder = loc.folderName;
 
-      // Подсветка по статусу
+      // Highlight by status
       if (inThisFolder) {
         opt.style.background = COLOR_HERE_BG;
         opt.style.color = "#fff";
-        opt.title = "Этот чат уже в выбранной группе";
+        opt.title = "This chat is already in the selected group";
       } else if (inSomeFolder) {
         opt.style.background = COLOR_ELSE_BG;
         opt.style.color = "#fff";
-        opt.title = `Этот чат уже в группе: ${loc.folderName}`;
+        opt.title = `This chat is already in group: ${loc.folderName}`;
       } else {
         opt.style.background = COLOR_DEFAULT_BG;
         opt.style.color = COLOR_DEFAULT_FG;
@@ -278,27 +278,27 @@ function openAddRequestDialog(targetFolder) {
     if (selectEl.options.length) selectEl.selectedIndex = 0;
   }
 
-  // начальный список
+  // initial list
   renderOptions(filterChatsBySubstring(""));
 
-  // фильтр
+  // filter
   searchEl.addEventListener("input", () => {
     const q = searchEl.value;
     const list = filterChatsBySubstring(q);
     renderOptions(list);
   });
 
-  // добавить
+  // add
   addBtn.addEventListener("click", async () => {
     const opt = selectEl.selectedOptions[0];
-    if (!opt) { alert("Выбери чат из списка."); return; }
+    if (!opt) { alert("Select a chat from the list."); return; }
     const url = opt.value;
-    const title = opt.dataset.title || "Без названия";
+    const title = opt.dataset.title || "Untitled";
     await moveOrInsertPageByUrl(targetFolder, url, title);
     overlay.remove();
   });
 
-  // закрыть
+  // close
   cancelBtn.addEventListener("click", () => overlay.remove());
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) overlay.remove();
@@ -316,22 +316,22 @@ function openAddRequestDialog(targetFolder) {
     const modal = document.createElement("div");
     modal.className = "cgpt-modal";
     modal.innerHTML = `
-      <h4>Переименовать папку</h4>
+      <h4>Rename group</h4>
       <div class="row">
         <label style="display:flex;gap:8px;align-items:center;">
-          <span style="min-width:110px">Новое имя:</span>
-          <input type="text" id="rnInput" placeholder="Новое имя папки">
+          <span style="min-width:110px">New name:</span>
+          <input type="text" id="rnInput" placeholder="New group name">
         </label>
 <label style="display:flex;gap:8px;align-items:center;">
-  <span style="min-width:110px">Цвет папки:</span>
+  <span style="min-width:110px">Group color:</span>
   <label class="color-ring"><input type="color" id="rnColor" value="${currentColor}"></label>
   <input type="text" id="rnColorText" value="${currentColor}" style="width:110px" />
 </label>
-        <div class="hint">Имя не должно быть пустым и не должно совпадать с существующей папкой.</div>
+        <div class="hint">Name must be non-empty and unique.</div>
       </div>
       <div class="actions">
-	    <button id="rnSave">Сохранить</button>
-        <button id="rnCancel">Отмена</button>
+            <button id="rnSave">Save</button>
+        <button id="rnCancel">Cancel</button>
       </div>
     `;
     overlay.appendChild(modal);
@@ -367,13 +367,13 @@ function openAddRequestDialog(targetFolder) {
       if (!isValidHex(newColor)) newColor = currentColor;
 
       if (!newName) {
-        alert("Имя папки не может быть пустым.");
+        alert("Group name cannot be empty.");
         inp.focus();
         return;
       }
       const nameChanged = newName !== oldName;
       if (nameChanged && stateCache.folders[newName]) {
-        alert("Папка с таким именем уже существует.");
+        alert("A group with this name already exists.");
         inp.focus();
         return;
       }
@@ -413,21 +413,45 @@ function openAddRequestDialog(targetFolder) {
   }
   
   function getContrastColor(hex) {
-  // нормализуем #rgb -> #rrggbb
+  // normalize #rgb -> #rrggbb
   let h = hex.replace('#','');
   if (h.length === 3) h = h.split('').map(c => c + c).join('');
   const r = parseInt(h.substr(0,2),16);
   const g = parseInt(h.substr(2,2),16);
   const b = parseInt(h.substr(4,2),16);
-  // относительная яркость (WCAG приблизительно)
+  // relative luminance (approximate WCAG)
   const luma = 0.2126*r + 0.7152*g + 0.0722*b;
   return luma < 140 ? "#fff" : "#000";
+}
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  r = Math.round((r + m) * 255);
+  g = Math.round((g + m) * 255);
+  b = Math.round((b + m) * 255);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+function getRandomPastelColor() {
+  const h = Math.floor(Math.random() * 360);
+  return hslToHex(h, 60, 85);
 }
 
 
 function openCreateFolderDialog() {
   const s = stateCache;
   if (!s.folderColors) s.folderColors = {};
+  const randomColor = getRandomPastelColor();
 
   const overlay = document.createElement("div");
   overlay.className = "cgpt-modal-overlay";
@@ -435,22 +459,22 @@ function openCreateFolderDialog() {
   const modal = document.createElement("div");
   modal.className = "cgpt-modal";
   modal.innerHTML = `
-    <h4>Создать новую группу</h4>
+    <h4>Create new group</h4>
     <div class="row">
       <label>
-        <span style="min-width:110px">Имя группы:</span>
-        <input type="text" id="nfName" placeholder="Например: Заметки">
+        <span style="min-width:110px">Group name:</span>
+        <input type="text" id="nfName" placeholder="e.g., Notes">
       </label>
 <label>
-  <span style="min-width:110px">Цвет группы:</span>
-  <label class="color-ring"><input type="color" id="nfColor" value="#444444"></label>
-  <input type="text" id="nfColorText" value="#444444" style="width:110px" />
+  <span style="min-width:110px">Group color:</span>
+  <label class="color-ring"><input type="color" id="nfColor" value="${randomColor}"></label>
+  <input type="text" id="nfColorText" value="${randomColor}" style="width:110px" />
 </label>
-      <div class="hint">Имя не должно быть пустым и не должно совпадать с существующей группой.</div>
+      <div class="hint">Name must be non-empty and unique.</div>
     </div>
     <div class="actions">
-      <button id="nfCreate">Создать</button>
-      <button id="nfCancel">Отмена</button>
+      <button id="nfCreate">Create</button>
+      <button id="nfCancel">Cancel</button>
     </div>
   `;
   overlay.appendChild(modal);
@@ -476,11 +500,11 @@ function openCreateFolderDialog() {
   async function commit(){
     const name = (nameEl.value || "").trim();
     let color = (colorText.value || "").trim();
-    if (!name) { alert("Имя группы не может быть пустым."); nameEl.focus(); return; }
-    if (s.folders[name]) { alert("Группа с таким именем уже существует."); nameEl.focus(); return; }
-    if (!isValidHex(color)) color = "#444444";
+    if (!name) { alert("Group name cannot be empty."); nameEl.focus(); return; }
+    if (s.folders[name]) { alert("A group with this name already exists."); nameEl.focus(); return; }
+    if (!isValidHex(color)) color = randomColor;
 
-    // создать
+    // create
     s.folders[name] = [];
     s.order.push(name);
     s.folderColors[name] = color;
@@ -489,7 +513,7 @@ function openCreateFolderDialog() {
     stateCache = await getState();
     render(panel.querySelector("#searchInput")?.value || "");
 
-    // плавная подсветка созданной группы
+    // smooth highlight of created group
     const sec = panel.querySelector(`.folder[data-folder="${CSS.escape(name)}"]`);
     if (sec) {
       sec.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -530,11 +554,11 @@ function openCreateFolderDialog() {
   const style = document.createElement("style");
 
 style.textContent = `
-  /* ===== ТЕМА ===== */
+  /* ===== THEME ===== */
   :host{
-    --bg:#1b1b1b;        /* фон панели и карточек */
-    --surface:#1b1b1b;   /* больше НЕ зелёный */
-    --surface-2:#2a2a2a; /* тёмные кнопки/поля */
+    --bg:#1b1b1b;        /* panel and card background */
+    --surface:#1b1b1b;   /* no longer green */
+    --surface-2:#2a2a2a; /* dark buttons/fields */
     --border:#ffffff;
     --text:#ffffff;
     --text-weak:#e0f2eb;
@@ -544,11 +568,11 @@ style.textContent = `
 
   .cgpt-panel, .cgpt-panel * { color:var(--text, #fff); }
 
-  /* ПАНЕЛЬ — 50px ниже, НЕ перекрывает правый скролл сайта */
+  /* PANEL — 50px lower, does not cover the site's right scrollbar */
   .cgpt-panel{
     position:fixed; top:50px; right:16px; bottom:0; left:auto; width:360px;
     background:var(--bg, #1b1b1b) !important;
-    border-left: none !important;   /* убрали белую полосу */
+    border-left: none !important;   /* removed white stripe */
     box-shadow:-8px 0 24px var(--shadow, rgba(0,0,0,.35));
     transform:translateX(0); transition:transform .2s ease;
     pointer-events:auto; display:flex; flex-direction:column;
@@ -556,14 +580,14 @@ style.textContent = `
     padding-top:0;
     padding-bottom:70px;
   }
-/* уводим ещё и на зазор справа + тень */
+/* shift further right for gap + shadow */
 .cgpt-panel.hidden{
-  transform: translateX(calc(100% + 24px)); /* 16px зазор + ~8px тень */
-  box-shadow: none;                          /* на всякий случай убираем тень */
+  transform: translateX(calc(100% + 24px)); /* 16px gap + ~8px shadow */
+  box-shadow: none;                          /* remove shadow just in case */
 }
 
 
-  /* Шапка */
+  /* Header */
   .cgpt-header{
     background:var(--surface, #1b1b1b);
     padding:8px;
@@ -574,7 +598,7 @@ style.textContent = `
     gap:8px; align-items:center;
   }
 
-  /* Поиск */
+  /* Search */
   .header-search{
     min-width:0; width:100%; box-sizing:border-box;
     padding:8px 10px;
@@ -585,22 +609,22 @@ style.textContent = `
   }
   .header-search::placeholder{ color:var(--text-weak, #cfe); }
 
-  /* Тело */
+  /* Body */
   .cgpt-body{ flex:1; overflow:auto; padding:10px 10px 12px; }
   .cgpt-body::-webkit-scrollbar{ width:10px; }
   .cgpt-body::-webkit-scrollbar-track{ background:var(--bg, #1b1b1b); }
   .cgpt-body::-webkit-scrollbar-thumb{ background:var(--surface-2, #2a2a2a); border:2px solid var(--bg, #1b1b1b); border-radius:8px; }
 
-  /* Карточка группы */
+  /* Group card */
   .folder{
     border:1px solid var(--border, #ffffff) !important; border-radius:12px;
     background:var(--surface, #1b1b1b) !important; margin-bottom:12px; overflow:hidden;
   }
 
-  /* Шапка группы — имя + цвет + Add chat + Delete на одной линии */
+  /* Group header — name + color + Add chat + Delete on one line */
   .folder-head{
     display:grid;
-    grid-template-columns: minmax(0,1fr) max-content max-content max-content; /* имя | color | Add | Delete */
+    grid-template-columns: minmax(0,1fr) max-content max-content max-content; /* name | color | Add | Delete */
     gap:8px; align-items:center; background:var(--surface, #1b1b1b);
     padding:8px 10px; border-bottom:1px solid var(--border, #fff) !important;
   }
@@ -611,8 +635,8 @@ style.textContent = `
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     cursor:text;
   }
-/* СТАЛО — применяется ТОЛЬКО к прямому инпуту в .folder-head,
-   не трогает инпут, завернутый в .color-ring */
+/* Applies ONLY to direct input in .folder-head,
+   does not touch input wrapped in .color-ring */
 .folder-head > input[type="color"]{
   -webkit-appearance:none; appearance:none;
   width:16px; height:16px; padding:0; border:none; border-radius:50%;
@@ -622,23 +646,20 @@ style.textContent = `
 .folder-head > input[type="color"]::-webkit-color-swatch{ border:none; border-radius:50%; }
 .folder-head > input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
 
-
-  /* Список элементов */
+  /* Item list */
   .req-list{ list-style:none; margin:0; padding:8px; display:flex; flex-direction:column; gap:8px; }
   .req{
     border:1px dashed var(--border, #ffffff) !important; border-radius:10px;
     background:var(--surface-2, #2a2a2a) !important; cursor:grab; padding:8px;
   }
   .req.dragging{ opacity:.6; }
-
-  /* Заголовок элемента — на всю длину */
+  /* Item title — full width */
   .req .title{
     font-size:12px; font-weight:600;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     width:100%;
   }
-
-  /* Нижняя линия элемента: Open (слева, уменьшить), дата (центр, 11px), Delete (справа) */
+  /* Bottom row of item: Open (left, smaller), date (center, 11px), Delete (right) */
   .req .row-actions{
     margin-top:6px;
     display:grid;
@@ -646,9 +667,9 @@ style.textContent = `
     align-items:center; gap:10px;
   }
   .open-btn{
-    padding:4px 8px;          /* меньше */
-    min-width:72px;           /* меньше */
-    font-size:11px;           /* компактнее */
+    padding:4px 8px;          /* smaller */
+    min-width:72px;           /* smaller */
+    font-size:11px;           /* more compact */
     border-radius:10px;
     background:var(--surface, #1b1b1b);
     color:var(--text, #fff);
@@ -657,7 +678,7 @@ style.textContent = `
     line-height:1.2;
   }
   .date{
-    font-size:11px;           /* требование */
+    font-size:11px;           /* requirement */
     color:var(--text-weak, #e0f2eb);
     text-align:center;
   }
@@ -667,7 +688,7 @@ style.textContent = `
     cursor:pointer;
   }
 
-  /* Общие кнопки */
+  /* Common buttons */
   button,.btn,label.like-button{
     display:inline-flex; align-items:center; justify-content:center;
     padding:8px 12px; border-radius:10px;
@@ -677,7 +698,7 @@ style.textContent = `
   }
   button:hover,.btn:hover,label.like-button:hover{ filter:brightness(1.06); }
 
-  /* Футер — центр; Import = Export по размерам и высоте */
+  /* Footer — centered; Import = Export in size and height */
   .footer{
     position:absolute; left:0; right:0; bottom:10px;
     padding:10px; background:var(--surface, #1b1b1b);
@@ -685,8 +706,8 @@ style.textContent = `
   }
   #importLabel{
     display:inline-flex; align-items:center; justify-content:center;
-    min-width:110px; height:33px;          /* совпадает с Export */
-    padding:8px 12px;                      /* совпадает с Export */
+    min-width:110px; height:33px;          /* matches Export */
+    padding:8px 12px;                      /* matches Export */
     border:1px solid var(--border, #ffffff) !important;
     background:var(--surface-2, #2a2a2a);
   }
@@ -700,14 +721,14 @@ style.textContent = `
   
   .icon-btn{
   min-width:0 !important;
-  width:22px;                   /* было 28px */
-  height:22px;                  /* было 28px */
-  padding:0; line-height:1; font-size:14px;  /* было 16px */
+  width:22px;                   /* was 28px */
+  height:22px;                  /* was 28px */
+  padding:0; line-height:1; font-size:14px;  /* was 16px */
   border-radius:8px;
   display:inline-flex; align-items:center; justify-content:center;
 }
 
-/* ====== СТИЛЬ МОДАЛОК (единый для rename/add) ====== */
+/* ===== MODAL STYLE (shared for rename/add) ===== */
 .cgpt-modal-overlay{
   position:fixed; inset:0;
   background:rgba(0,0,0,.55);
@@ -740,7 +761,7 @@ style.textContent = `
   background:#2a2a2a; color:#fff; border:1px solid #ffffff; min-width:100px;
 }
 
-/* круг выбора цвета внутри модалки — как в шапке */
+/* color picker circle in modal — same as in header */
 .cgpt-modal input[type="color"]{
   -webkit-appearance:none; appearance:none;
   width:16px; height:16px; padding:0; border:none; border-radius:50%;
@@ -751,7 +772,7 @@ style.textContent = `
 .cgpt-modal input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
 
 
-/* === FIX: круглая кнопка открытия панели === */
+/* === FIX: round button opening the panel === */
 .cgpt-toggle{
   position: fixed;
   right: 12px;
@@ -760,7 +781,7 @@ style.textContent = `
   
   width: 48px !important;
   height: 48px !important;
-  min-width: 48px !important;     /* перебиваем общее min-width:90px */
+  min-width: 48px !important;     /* override general min-width:90px */
   padding: 0 !important;
   box-sizing: border-box !important;
 
@@ -780,13 +801,13 @@ style.textContent = `
 }
 .cgpt-toggle:active { transform: translateY(-50%) scale(0.96); }
 
-/* на всякий случай — чтобы общее правило для кнопок не влияло */
+/* just in case — prevent global button rule interference */
 button.cgpt-toggle{ min-width: 48px !important; }
 
 
 
 .cgpt-panel{
-  right: 16px; /* как у тебя */
+  right: 16px; /* as before */
 }
 
 .folder-head {
@@ -798,14 +819,14 @@ button.cgpt-toggle{ min-width: 48px !important; }
 }
 
 
-/* имя папки — с рамкой */
+/* folder name with border */
 .folder-head .name-input{
   flex: 1 1 auto;
   box-sizing: border-box;
   padding: 4px 8px;
 border: 1px solid currentColor !important;
   border-radius: 6px;
-  background: transparent !important;     /* фон берём из .folder-head */
+  background: transparent !important;     /* background from .folder-head */
   color: inherit;
   font-weight: 700;
   font-size: 14px;
@@ -816,7 +837,7 @@ border: 1px solid currentColor !important;
   box-shadow: 0 0 0 2px rgba(255,255,255,.15);
 }
 
-/* отдельно стилизуем color, чтобы общее правило его не ломало */
+/* style color input separately so the general rule doesn't break it */
 .folder-head input[type="color"]{
   -webkit-appearance:none; appearance:none;
   width:16px; height:16px; padding:0; border:none; border-radius:50%;
@@ -827,7 +848,7 @@ border: 1px solid currentColor !important;
 .folder-head input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
 
 
-/* Видимое круглое кольцо, строго квадратное */
+/* Visible circular ring, strictly square */
 .color-ring{
   display:inline-flex;
   align-items:center;
@@ -835,18 +856,18 @@ border: 1px solid currentColor !important;
   box-sizing:border-box;
   width:22px;
   height:22px;
-  aspect-ratio: 1 / 1;        /* не даст превратиться в овал */
-  flex: 0 0 22px;             /* запретит растягивание во flex/grid */
-border: 1.5px solid currentColor; /* было #ffffff */
-  border-radius:50%;          /* круг */
-  padding:2px;                /* толщина кольца */
+  aspect-ratio: 1 / 1;        /* prevents turning into an oval */
+  flex: 0 0 22px;             /* prevents stretching in flex/grid */
+border: 1.5px solid currentColor; /* was #ffffff */
+  border-radius:50%;          /* circle */
+  padding:2px;                /* ring thickness */
   overflow:hidden;
   cursor:pointer;
-  line-height:0;              /* убираем влияние строчной высоты */
+  line-height:0;              /* remove line-height influence */
   color: inherit;
 }
 
-/* Цветной кружок внутри кольца — заполняет его полностью */
+/* Colored circle inside ring fills it completely */
 .color-ring input[type="color"]{
   -webkit-appearance:none; appearance:none;
   display:block;
@@ -862,10 +883,10 @@ border: 1.5px solid currentColor; /* было #ffffff */
 .color-ring input[type="color"]::-webkit-color-swatch{ border:none; border-radius:50%; }
 .color-ring input[type="color"]::-moz-color-swatch{ border:none; border-radius:50%; }
 
-/* скрытый список запросов папки */
+/* hidden list of folder requests */
 .req-list.collapsed { display: none; }
 
-/* маленькая круглая кнопка-стрелка в шапке */
+/* small round arrow button in header */
 .collapse-btn{
   min-width: 22px !important;
   width: 22px; height: 22px;
@@ -878,30 +899,30 @@ border: 1.5px solid currentColor; /* было #ffffff */
 }
 .collapse-btn:hover{ filter:brightness(1.06); }
 
-/* когда папка свёрнута — скругляем низ шапки */
+/* when folder collapsed — round bottom of header */
 .folder.collapsed .folder-head{ border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
 
 
 
-/* Кнопка коллапса без бордеров/фона, только большой треугольник */
+/* Collapse button without borders/background, only large triangle */
 .folder-head .collapse-btn{
-  all: unset;                 /* вырубает все дефолтные стили и наше общее правило для button */
+  all: unset;                 /* remove default styles and our button rule */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 30px;            /* размер треугольника */
+  font-size: 30px;            /* triangle size */
   line-height: 1;
-  padding: 0;             /* небольшой «захват» для клика */
+  padding: 0;             /* small grab area for click */
   flex: 0 0 auto;
-  color: inherit;             /* берём цвет текста шапки */
+  color: inherit;             /* inherit header text color */
   border:none !important;
 }
 .folder-head .collapse-btn:focus{ outline: none; }
 .folder-head .collapse-btn:hover{ transform: scale(1.1); }
 
 
-/* визуальные подсказки при dnd */
+/* visual cues during dnd */
 .folder.drop-before{ box-shadow: inset 0 6px 0 0 var(--accent,#fff); }
 .folder.drop-after{  box-shadow: inset 0 -6px 0 0 var(--accent,#fff); }
 .folder.dragging-folder{ opacity: .6; }
@@ -910,34 +931,34 @@ border: 1.5px solid currentColor; /* было #ffffff */
 .req.dragging{ opacity:.6; }
 
 
-/* Пустая зона приёма дропа */
+/* Empty drop zone */
 .req-list{
-  min-height: 4px;            /* чтобы всегда была зона для событий */
+  min-height: 4px;            /* ensure drop zone always exists */
 }
 .req-list.empty{
   display:block;
   padding:16px;
-  min-height:24px;            /* удобная цель для дропа */
+  min-height:24px;            /* convenient drop target */
   border:1px dashed var(--border, #ffffff);
   border-radius:10px;
   background:transparent;
   position:relative;
 }
 .req-list.empty::after{
-  content:"Перетащите сюда";
+  content:"Drag here";
   display:block;
   text-align:center;
   opacity:.6;
   font-size:12px;
-  pointer-events:none;        /* не перехватывает события мыши */
+  pointer-events:none;        /* does not intercept mouse events */
 }
 
-/* Плавные сдвиги элементов при появлении маркера */
+/* Smooth shifts when marker appears */
 .req-list .req{
   transition: margin .12s ease, transform .12s ease;
 }
 
-/* Анимированный маркер места вставки */
+/* Animated insertion marker */
 .req-list .drop-marker{
   list-style: none;
   height: 0;
@@ -949,7 +970,7 @@ border: 1.5px solid currentColor; /* было #ffffff */
   position: relative;
 }
 .req-list .drop-marker.active{
-  height: 12px;           /* «щель» */
+  height: 12px;           /* gap */
   margin: 4px 0;
 }
 .req-list .drop-marker::after{
@@ -965,7 +986,7 @@ border: 1.5px solid currentColor; /* было #ffffff */
 }
 .req-list.collapsed .drop-marker{ display:none; }
 
-/* опасное действие в модалке */
+/* dangerous action in modal */
 .cgpt-modal .actions .danger{
   background:#8a2d2d; 
   border:1px solid #ffffff !important; 
@@ -998,7 +1019,7 @@ shadow.appendChild(style);
   <div class="cgpt-actions">
     <button id="addFolderBtn">New Group</button>
     <input id="searchInput" class="header-search" type="text" placeholder="Search by chat...">
-    <button id="closeBtn" class="icon-btn" title="Закрыть">✕</button>
+    <button id="closeBtn" class="icon-btn" title="Close">✕</button>
   </div>
 </div>
 
@@ -1016,7 +1037,7 @@ shadow.appendChild(style);
   
   shadow.appendChild(panel);
   
-  // ===== helpers для DnD чатов =====
+  // ===== helpers for DnD chats =====
 function getDropIndex(ul, clientY){
   const items = Array.from(ul.querySelectorAll('.req'));
   for (let i = 0; i < items.length; i++){
@@ -1045,7 +1066,7 @@ function getDropIndex(ul, clientY){
   let dragData = null;     // { type:'chat', fromFolder, fromIndex }
   let folderDrag = null;   // { fromName, fromIndex }
 
-  // найти сохранённую «страницу чата» по URL во всех папках
+  // find saved "chat page" by URL across folders
   function findSavedPage(rawUrl) {
     const target = normalizeUrl(rawUrl);
     const s = stateCache;
@@ -1061,12 +1082,12 @@ function getDropIndex(ul, clientY){
     return null;
   }
 
-  // перенести или создать «страницу чата» по ЗАДАННОМУ URL в целевую папку (используется модалкой Add chat)
+  // move or create "chat page" by GIVEN URL in target folder (used by Add chat modal)
   async function moveOrInsertPageByUrl(targetFolder, rawUrl, forcedTitle) {
     if (!targetFolder || !stateCache?.folders?.[targetFolder]) return;
     const s = stateCache;
     const nurl = normalizeUrl(rawUrl);
-    const title = forcedTitle || "Без названия";
+    const title = forcedTitle || "Untitled";
 
     const loc = findSavedPage(rawUrl);
     if (loc && loc.folderName === targetFolder) return;
@@ -1118,13 +1139,13 @@ function getDropIndex(ul, clientY){
 const head = document.createElement("div");
 head.className = "folder-head";
 
-// --- ВНЕШНИЙ drop на шапку папки (добавляет чат в конец папки) ---
+// --- EXTERNAL drop on folder header (adds chat to end) ---
 head.addEventListener("dragover", (e) => {
-  if (dragData) return; // наш внутренний DnD чатов
+  if (dragData) return; // our internal DnD of chats
   const extUrl = extractUrlFromDt(e.dataTransfer);
   if (!extUrl) return;
   e.preventDefault();
-  section.classList.add("drop-before"); // просто подсветим
+  section.classList.add("drop-before"); // just highlight
   e.dataTransfer.dropEffect = "copy";
 });
 
@@ -1138,19 +1159,19 @@ head.addEventListener("drop", async (e) => {
   section.classList.remove("drop-before","drop-after");
   if (!extUrl) return;
 
-  // найдём заголовок из сайдбара (если есть)
+  // find title from sidebar if available
   const nurl = normalizeUrl(extUrl);
   const fromSidebar = getSidebarChats().find(x => normalizeUrl(x.url) === nurl);
   const title = fromSidebar?.title || getConversationTitleFallback();
 
   await moveOrInsertPageByUrl(folderName, extUrl, title);
-  // мягкая подсветка папки
+  // soft highlight of folder
   head.style.outline = "2px solid #fff";
   setTimeout(() => head.style.outline = "", 600);
 });
 
 
-// --- DnD ПАПОК (тянуть за .folder-head) ---
+// --- DnD of FOLDERS (drag by .folder-head) ---
 head.draggable = true;
 
 head.addEventListener('dragstart', (e) => {
@@ -1165,9 +1186,9 @@ head.addEventListener('dragend', () => {
   body.querySelectorAll('.folder').forEach(el => el.classList.remove('drop-before','drop-after'));
 });
 
-// принимать дроп папок на саму карточку папки
+// accept folder drops on the folder card
 section.addEventListener('dragover', (e) => {
-  if (!folderDrag || dragData) return; // не мешаем dnd чатов
+  if (!folderDrag || dragData) return; // don't interfere with chat dnd
   e.preventDefault();
   const rect = section.getBoundingClientRect();
   const before = e.clientY < rect.top + rect.height / 2;
@@ -1195,7 +1216,7 @@ section.addEventListener('drop', async (e) => {
   if (fromIdx === toIdx || fromIdx + 1 === toIdx) return;
 
   const [moved] = s.order.splice(fromIdx, 1);
-  if (fromIdx < toIdx) toIdx--; // корректировка индекса вставки
+  if (fromIdx < toIdx) toIdx--; // adjust insertion index
   s.order.splice(toIdx, 0, moved);
 
   await setState(s);
@@ -1210,7 +1231,7 @@ if (isCollapsed) section.classList.add("collapsed");
 
 const toggleBtn = document.createElement("button");
 toggleBtn.className = "collapse-btn";
-toggleBtn.title = isCollapsed ? "Развернуть группу" : "Свернуть группу";
+toggleBtn.title = isCollapsed ? "Expand group" : "Collapse group";
 toggleBtn.textContent = isCollapsed ? "▸" : "▾";
 toggleBtn.addEventListener("click", async (e) => {
   e.stopPropagation();
@@ -1222,7 +1243,7 @@ toggleBtn.addEventListener("click", async (e) => {
 });
 
 
-// применяем цвет группы (если есть)
+// apply group color if present
 if (s.folderColors && s.folderColors[folderName]) {
   const c = s.folderColors[folderName];
   head.style.backgroundColor = c;
@@ -1232,7 +1253,7 @@ if (s.folderColors && s.folderColors[folderName]) {
       const nameInput = document.createElement("input");
       nameInput.className = "name-input";
       nameInput.value = folderName;
-      nameInput.title = "Переименовать папку";
+      nameInput.title = "Rename group";
       nameInput.readOnly = true;
       nameInput.style.cursor = "text";
 	  nameInput.style.removeProperty("color");
@@ -1246,9 +1267,9 @@ colorWrap.className = "color-ring";
 
 const colorBtn = document.createElement("input");
 colorBtn.type = "color";
-colorBtn.title = "Выбрать цвет папки";
+colorBtn.title = "Choose group color";
 
-// 🔹 ВОТ ЭТИ ДВЕ СТРОКИ ДОБАВЬ:
+// 🔹 ADD THESE TWO LINES:
 const currentColor = (s.folderColors && s.folderColors[folderName]) || "#444444";
 colorBtn.value = currentColor;
 
@@ -1258,7 +1279,7 @@ colorBtn.addEventListener("input", async (e) => {
   s.folderColors[folderName] = color;
 
   head.style.backgroundColor = color;
-  head.style.color = getContrastColor(color); // имя унаследует
+  head.style.color = getContrastColor(color); // name inherits
 
   await setState(s);
   stateCache = await getState();
@@ -1293,7 +1314,7 @@ actionBtn.addEventListener("click", async () => {
   const len = (s.folders[folderName] || []).length;
 
   if (len > 0) {
-    // CLEAR CHATS (стилизованный диалог)
+    // CLEAR CHATS (styled dialog)
     const ok = await openConfirmDialog({
       title: "Clear all chats",
       message: `Remove all chats from “${folderName}”?`,
@@ -1308,7 +1329,7 @@ actionBtn.addEventListener("click", async () => {
     stateCache = await getState();
     render(q);   // relabel -> "Delete"
   } else {
-    // DELETE EMPTY GROUP (стилизованный диалог)
+    // DELETE EMPTY GROUP (styled dialog)
     const ok = await openConfirmDialog({
       title: "Delete group",
       message: `Delete empty group “${folderName}”?`,
@@ -1340,7 +1361,7 @@ ul.className = "req-list";
 ul.dataset.folder = folderName;
 if (isCollapsed) ul.classList.add("collapsed");
 
-// ===== helper: индекс вставки в ПОЛНОМ массиве папки с учётом фильтра =====
+// ===== helper: insertion index in FULL folder array considering filter =====
 function getDropIndexFull(ul, clientY) {
   const destFolder = ul.dataset.folder;
   const full = s.folders[destFolder] || [];
@@ -1350,7 +1371,7 @@ function getDropIndexFull(ul, clientY) {
 
   if (items.length === 0) return full.length;
 
-  // вычисляем vidx места вставки по середине карточек
+  // compute vidx insertion point by card center
   let visIndex = items.length;
   for (let i = 0; i < items.length; i++) {
     const r = items[i].getBoundingClientRect();
@@ -1358,10 +1379,10 @@ function getDropIndexFull(ul, clientY) {
     if (clientY < mid) { visIndex = i; break; }
   }
 
-  // показать маркер именно здесь (визуально)
+  // show marker exactly here (visual)
   showMarkerAt(ul, visIndex);
 
-  // перевести видимый индекс в индекс полного массива
+  // convert visible index to full array index
   const fullIndexes = items.map(el => Number(el.dataset.fullIndex));
   if (visIndex === items.length) {
     const after = fullIndexes[fullIndexes.length - 1] + 1;
@@ -1372,7 +1393,7 @@ function getDropIndexFull(ul, clientY) {
 }
 
 
-// Один маркер на ul: создаём по требованию и переиспользуем
+// One marker per ul: create on demand and reuse
 function ensureMarker(ul){
   if (!ul._marker){
     const m = document.createElement('li');
@@ -1382,12 +1403,12 @@ function ensureMarker(ul){
   return ul._marker;
 }
 
-// Показать маркер перед видимым элементом с индексом visIndex (или в конец)
+// Show marker before visible element with index visIndex (or at end)
 function showMarkerAt(ul, visIndex){
   const marker = ensureMarker(ul);
   if (!marker.isConnected) ul.appendChild(marker);
 
-  // собираем видимые li, без самого маркера и без тянущегося элемента
+  // collect visible li excluding marker and dragged element
   const items = Array.from(ul.querySelectorAll('.req'))
     .filter(el => !el.classList.contains('dragging'));
 
@@ -1396,22 +1417,22 @@ function showMarkerAt(ul, visIndex){
   } else {
     ul.insertBefore(marker, items[visIndex]);
   }
-  // плавно раскрываем
+  // smoothly expand
   marker.classList.add('active');
 }
 
-// Спрятать маркер
+// Hide marker
 function hideMarker(ul){
   if (ul?._marker){
     ul._marker.classList.remove('active');
-    // чуть позже удалим из DOM, чтобы анимация схлопнулась
+    // remove from DOM later so animation collapses
     const mm = ul._marker;
     setTimeout(() => { if (mm.isConnected && !mm.classList.contains('active')) mm.remove(); }, 150);
   }
 }
 
 
-// ===== DnD НА СПИСОК (один раз, вне цикла по li) =====
+// ===== DnD ON LIST (once, outside loop over li) =====
 ul.addEventListener("dragover", (e) => {
   if (isCollapsed) return;
 
@@ -1423,7 +1444,7 @@ ul.addEventListener("dragover", (e) => {
   ul.classList.add("drop-target");
   e.dataTransfer.dropEffect = isInternal ? "move" : "copy";
 
-  // покажем маркер места вставки (исп. 's' из render)
+  // show marker of insertion spot (uses 's' from render)
   getDropIndexFull(ul, e.clientY);
 });
 
@@ -1441,13 +1462,13 @@ ul.addEventListener("drop", async (e) => {
   const isInternal = !!dragData && dragData.type === "chat";
   ul.classList.remove("drop-target");
 
-  // ==== внутренний DnD (между/внутри групп) ====
+  // ==== internal DnD (between/within groups) ====
   if (isInternal) {
     e.preventDefault();
     const toFolder = ul.dataset.folder;
     const { fromFolder, fromIndex } = dragData;
 
-    const src = s.folders[fromFolder];      // ← 's' из render
+    const src = s.folders[fromFolder];      // ← 's' from render
     const dst = s.folders[toFolder];
 
     const [moved] = src.splice(fromIndex, 1);
@@ -1469,7 +1490,7 @@ ul.addEventListener("drop", async (e) => {
     return;
   }
 
-  // ==== внешний DnD (ссылку тащат из сайдбара) ====
+  // ==== external DnD (link dragged from sidebar) ====
   const extUrl = extractUrlFromDt(e.dataTransfer);
   hideMarker(ul);
   if (!extUrl) return;
@@ -1503,30 +1524,30 @@ ul.addEventListener("drop", async (e) => {
 });
 
 
-// ===== вычисляем список видимых (для рендера) =====
+// ===== compute list of visible items (for render) =====
 const fullList = list;
 const visible = q
   ? fullList.filter((it) => (it?.text || it?.title || "").toLowerCase().includes(q))
   : fullList;
 
-// Пустая зона приёма
+// Empty drop area
 if (!isCollapsed && visible.length === 0) {
   ul.classList.add("empty");
 } else {
   ul.classList.remove("empty");
 }
 
-// ===== элементы =====
+// ===== elements =====
 visible.forEach((item, idxVis) => {
   const li = document.createElement("li");
   li.className = "req";
   li.draggable = true;
 
-  // Индекс ЭТОГО элемента в ПОЛНОМ массиве группы
+  // Index of THIS item in the FULL array of the group
   const fullIdx = idxFromFiltered(visible, fullList, q, idxVis);
-  li.dataset.fullIndex = String(fullIdx);   // <— используем выше в getDropIndexFull
+  li.dataset.fullIndex = String(fullIdx);   // — used above in getDropIndexFull
 
-  // ---- DnD элемента ----
+  // ---- element DnD ----
   li.addEventListener("dragstart", (e) => {
     dragData = { type: "chat", fromFolder: folderName, fromIndex: fullIdx };
     li.classList.add("dragging");
@@ -1542,8 +1563,8 @@ li.addEventListener("dragend", () => {
 });
 
 
-// ---- контент ----
-const titleSafe = (item && (item.text || item.title)) || "(без названия)";
+// ---- content ----
+const titleSafe = (item && (item.text || item.title)) || "(untitled)";
 const dateSafe  = (item && item.ts) ? fmtDate(item.ts) : "";
 const urlSafe   = item?.url || item?.nurl || "#";
 
@@ -1556,26 +1577,26 @@ li.innerHTML = `
   </div>
 `;
 
-// чтобы клик по ссылке не конфликтовал с dnd
+// to avoid link click conflicting with dnd
 const openA = li.querySelector(".open-btn");
-openA.draggable = false; // иначе иногда тащит li
+openA.draggable = false; // otherwise sometimes drags li
 openA.addEventListener("mousedown", e => e.stopPropagation());
 
-// открывать в этой вкладке — обычный клик; в новой — Ctrl/Cmd-клик/средняя кнопка
+// open in this tab with normal click; new tab with Ctrl/Cmd/middle click
 openA.addEventListener("click", (e) => {
   const url = item?.url || item?.nurl;
   if (!url) return;
 
-  // если пользователь сам выбрал новый таб (Ctrl/Cmd/средняя кнопка) — даём браузеру сделать своё
+  // if user chose new tab (Ctrl/Cmd/middle) let browser handle
   if (e.metaKey || e.ctrlKey || e.button === 1) return;
 
-  // иначе открываем в этой же вкладке
+  // otherwise open in same tab
   e.preventDefault();
   location.href = url;
 });
 
 
-  // удаление
+  // deletion
 li.querySelector('[data-act="del"]').addEventListener("click", async () => {
   const ok = await openConfirmDialog({
     title: "Delete chat",
@@ -1614,17 +1635,17 @@ li.querySelector('[data-act="del"]').addEventListener("click", async () => {
   toggleBtn.addEventListener("click", openPanel);
   panel.querySelector("#closeBtn").addEventListener("click", closePanel);
 
-  // Создать папку
+  // Create folder
 panel.querySelector("#addFolderBtn").addEventListener("click", () => {
   openCreateFolderDialog();
 });
 
-  // Поиск
+  // Search
   panel.querySelector("#searchInput").addEventListener("input", (e) => {
     render(e.target.value);
   });
 
-  // Экспорт
+  // Export
   panel.querySelector("#exportBtn").addEventListener("click", async () => {
     const s = await getState();
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: "application/json" });
@@ -1636,7 +1657,7 @@ panel.querySelector("#addFolderBtn").addEventListener("click", () => {
     URL.revokeObjectURL(url);
   });
 
-  // Импорт
+  // Import
   panel.querySelector("#importFile").addEventListener("change", async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -1647,15 +1668,15 @@ panel.querySelector("#addFolderBtn").addEventListener("click", () => {
       await setState(json);
       stateCache = await getState();
       render(panel.querySelector("#searchInput").value);
-      alert("Импорт завершён");
+      alert("Import complete");
     } catch (err) {
-      alert("Неверный формат файла.");
+      alert("Invalid file format.");
     } finally {
       e.target.value = "";
     }
   });
 
-  // Очистить всё
+  // Clear all
 panel.querySelector("#clearBtn").addEventListener("click", async () => {
   const ok = await openConfirmDialog({
     title: "Clear everything",
