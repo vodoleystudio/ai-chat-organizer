@@ -419,8 +419,7 @@
     const btnCancel = modal.querySelector("#rnCancel");
 
     inp.value = oldName;
-    inp.focus();
-    inp.setSelectionRange(0, inp.value.length);
+    focusModalInput(inp, true);
 
     colorPicker.addEventListener("input", () => {
       colorText.value = colorPicker.value;
@@ -558,6 +557,15 @@
     return hslToHex(h, 60, 85);
   }
 
+  function focusModalInput(el, selectAll = false) {
+    const run = () => {
+      el.focus();
+      if (selectAll) el.setSelectionRange(0, el.value.length);
+    };
+    setTimeout(run, 0);
+    if (SITE_ID === "claude") setTimeout(run, 100);
+  }
+
   function openCreateFolderDialog() {
     const s = stateCache;
     if (!s.folderColors) s.folderColors = {};
@@ -596,7 +604,7 @@
     const btnCreate = modal.querySelector("#nfCreate");
     const btnCancel = modal.querySelector("#nfCancel");
 
-    nameEl.focus();
+    focusModalInput(nameEl);
 
     // sync color <-> text
     colorPicker.addEventListener("input", () => {
