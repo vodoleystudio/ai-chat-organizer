@@ -1,7 +1,14 @@
 (async () => {
   // ---- Storage helpers ----
-  const STORAGE_KEY = "cgpt_groups_v1";
-  const STORAGE_KEY_OPEN = "cgpt_groups_open_v1";
+  const SITE_ID = (() => {
+    const h = location.hostname;
+    if (h.includes("claude.ai")) return "claude";
+    if (h.includes("perplexity.ai")) return "perplexity";
+    if (h.includes("gemini.google.com")) return "gemini";
+    return "cgpt";
+  })();
+  const STORAGE_KEY = `${SITE_ID}_groups_v1`;
+  const STORAGE_KEY_OPEN = `${SITE_ID}_groups_open_v1`;
 
   // Default structure for stored data.
   const DEFAULT_STATE = {
@@ -116,6 +123,8 @@
       const url = new URL(u);
       url.protocol = "https:";
       if (url.hostname === "chat.openai.com") url.hostname = "chatgpt.com";
+      if (url.hostname === "www.perplexity.ai") url.hostname = "perplexity.ai";
+      if (url.hostname === "www.claude.ai") url.hostname = "claude.ai";
       url.search = "";
       url.hash = "";
       if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
@@ -1388,7 +1397,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "chatgpt_groups_export.json";
+    a.download = `${SITE_ID}_groups_export.json`;
     a.click();
     URL.revokeObjectURL(url);
   });
