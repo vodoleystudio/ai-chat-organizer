@@ -235,15 +235,10 @@
           href = new URL(href, location.origin).toString();
       } catch {}
       const nurl = normalizeUrl(href);
-
-      const target = a.closest("li, div") || a;
-      if (a !== target) a.classList.remove("cgpt-chat-saved", "cgpt-chat-current");
-
-      if (saved.has(nurl)) target.classList.add("cgpt-chat-saved");
-      else target.classList.remove("cgpt-chat-saved");
-
-      if (nurl === current) target.classList.add("cgpt-chat-current");
-      else target.classList.remove("cgpt-chat-current");
+      if (saved.has(nurl)) a.classList.add("cgpt-chat-saved");
+      else a.classList.remove("cgpt-chat-saved");
+      if (nurl === current) a.classList.add("cgpt-chat-current");
+      else a.classList.remove("cgpt-chat-current");
     }
   }
 
@@ -698,7 +693,7 @@
   const globalStyle = document.createElement("style");
   globalStyle.textContent = `
     .cgpt-chat-saved { background: #214b29 !important; }
-    .cgpt-chat-current { outline: 2px dashed #fff !important; }
+    .cgpt-chat-current { outline: 3px dashed #fff !important; }
   `;
   document.head.appendChild(globalStyle);
 
