@@ -187,6 +187,32 @@
     return res;
   }
 
+  function highlightSidebarChats() {
+    if (!stateCache) return;
+    const saved = new Set();
+    for (const folderName of stateCache.order || []) {
+      for (const it of stateCache.folders[folderName] || []) {
+        if (it?.type === "page") {
+          const n = it.nurl || normalizeUrl(it.url || "");
+          saved.add(n);
+        }
+      }
+    }
+    const anchors = document.querySelectorAll('a[href*="/c/"]');
+    for (const a of anchors) {
+      let href = a.getAttribute("href") || "";
+      try {
+        if (!/^https?:\/\//.test(href))
+          href = new URL(href, location.origin).toString();
+      } catch {}
+      const nurl = normalizeUrl(href);
+      if (saved.has(nurl)) a.classList.add("cgpt-chat-saved");
+      else a.classList.remove("cgpt-chat-saved");
+    }
+  }
+
+  setInterval(highlightSidebarChats, 2000);
+
   function extractUrlFromDt(dt) {
     if (!dt) return "";
     // when dragging <a>, browsers usually put text/uri-list
@@ -633,6 +659,10 @@
   ).text();
   shadow.appendChild(style);
 
+  const globalStyle = document.createElement("style");
+  globalStyle.textContent = `.cgpt-chat-saved { background: #214b29 !important; }`;
+  document.head.appendChild(globalStyle);
+
   // Toggle button
   const toggleBtn = document.createElement("button");
   toggleBtn.className = "cgpt-toggle";
@@ -676,6 +706,99 @@
   let stateCache = null;
   let dragData = null; // { type:'chat', fromFolder, fromIndex }
   let folderDrag = null; // { fromName, fromIndex }
+
+  // ===== helpers for DnD folders =====
+  function ensureFolderMarker() {
+    const body = panel.querySelector("#body");
+    if (!body._folderMarker) {
+      const m = document.createElement("div");
+      m.className = "folder-drop-marker";
+      body._folderMarker = m;
+    }
+    return body._folderMarker;
+  }
+
+  function showFolderMarkerAt(index) {
+    const body = panel.querySelector("#body");
+    const marker = ensureFolderMarker();
+    if (!marker.isConnected) body.appendChild(marker);
+    const items = Array.from(body.querySelectorAll(".folder")).filter(
+      (el) => !el.classList.contains("dragging-folder"),
+    );
+    if (index >= items.length) body.appendChild(marker);
+    else body.insertBefore(marker, items[index]);
+    marker.classList.add("active");
+  }
+
+  function hideFolderMarker() {
+    const body = panel.querySelector("#body");
+    const m = body._folderMarker;
+    if (m) {
+      m.classList.remove("active");
+      setTimeout(() => {
+        if (m.isConnected && !m.classList.contains("active")) m.remove();
+      }, 150);
+    }
+  }
+
+  function getFolderDropIndex(clientY) {
+    const body = panel.querySelector("#body");
+    const items = Array.from(body.querySelectorAll(".folder")).filter(
+      (el) => !el.classList.contains("dragging-folder"),
+    );
+    if (items.length === 0) {
+      showFolderMarkerAt(0);
+      return 0;
+    }
+    let idx = items.length;
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      if (clientY < mid) {
+        idx = i;
+        break;
+      }
+    }
+    showFolderMarkerAt(idx);
+    return idx;
+  }
+
+  const bodyEl = panel.querySelector("#body");
+  bodyEl.addEventListener("dragover", (e) => {
+    if (!folderDrag || dragData) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    getFolderDropIndex(e.clientY);
+  });
+
+  bodyEl.addEventListener("dragleave", (e) => {
+    const rect = bodyEl.getBoundingClientRect();
+    if (
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom
+    ) {
+      hideFolderMarker();
+    }
+  });
+
+  bodyEl.addEventListener("drop", async (e) => {
+    if (!folderDrag || dragData) return;
+    e.preventDefault();
+    hideFolderMarker();
+    const s = stateCache;
+    const fromIdx = s.order.indexOf(folderDrag.fromName);
+    const toIdxRaw = getFolderDropIndex(e.clientY);
+    let toIdx = toIdxRaw;
+    if (fromIdx === toIdx || fromIdx + 1 === toIdx) return;
+    const [moved] = s.order.splice(fromIdx, 1);
+    if (fromIdx < toIdx) toIdx--;
+    s.order.splice(toIdx, 0, moved);
+    await setState(s);
+    stateCache = await getState();
+    render(panel.querySelector("#searchInput").value || "");
+  });
 
   // find saved "chat page" by URL across folders
   function findSavedPage(rawUrl) {
@@ -798,47 +921,7 @@
       head.addEventListener("dragend", () => {
         folderDrag = null;
         section.classList.remove("dragging-folder");
-        body
-          .querySelectorAll(".folder")
-          .forEach((el) => el.classList.remove("drop-before", "drop-after"));
-      });
-
-      // accept folder drops on the folder card
-      section.addEventListener("dragover", (e) => {
-        if (!folderDrag || dragData) return; // don't interfere with chat dnd
-        e.preventDefault();
-        const rect = section.getBoundingClientRect();
-        const before = e.clientY < rect.top + rect.height / 2;
-        section.classList.toggle("drop-before", before);
-        section.classList.toggle("drop-after", !before);
-        e.dataTransfer.dropEffect = "move";
-      });
-
-      section.addEventListener("dragleave", () => {
-        if (!folderDrag) return;
-        section.classList.remove("drop-before", "drop-after");
-      });
-
-      section.addEventListener("drop", async (e) => {
-        if (!folderDrag || dragData) return;
-        e.preventDefault();
-        section.classList.remove("drop-before", "drop-after");
-
-        const fromIdx = s.order.indexOf(folderDrag.fromName);
-        const toIdxRaw = s.order.indexOf(folderName);
-        const rect = section.getBoundingClientRect();
-        const before = e.clientY < rect.top + rect.height / 2;
-        let toIdx = before ? toIdxRaw : toIdxRaw + 1;
-
-        if (fromIdx === toIdx || fromIdx + 1 === toIdx) return;
-
-        const [moved] = s.order.splice(fromIdx, 1);
-        if (fromIdx < toIdx) toIdx--; // adjust insertion index
-        s.order.splice(toIdx, 0, moved);
-
-        await setState(s);
-        stateCache = await getState();
-        render(panel.querySelector("#searchInput").value || "");
+        hideFolderMarker();
       });
 
       const isCollapsed = !!(s.collapsed && s.collapsed[folderName]);
@@ -1274,6 +1357,7 @@
       section.appendChild(ul);
       body.appendChild(section);
     });
+    highlightSidebarChats();
   }
 
   function idxFromFiltered(filteredArr, fullArr, q, idxInFiltered) {
