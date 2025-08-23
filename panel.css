@@ -273,6 +273,12 @@ label.like-button:hover {
   min-width: 110px;
 }
 
+.footer #clearBtn {
+  background: #8a2d2d;
+  border: 1px solid var(--border, #fff);
+  color: #fff;
+}
+
 .drop-target {
   outline: 2px dashed var(--accent, #ffffff);
   outline-offset: 2px;
