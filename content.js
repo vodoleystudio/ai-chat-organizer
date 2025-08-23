@@ -1497,12 +1497,12 @@
     }
   });
 
-  // Clear all
+  // Delete all
   panel.querySelector("#clearBtn").addEventListener("click", async () => {
     const ok = await openConfirmDialog({
-      title: "Clear everything",
+      title: "Delete everything",
       message: "Delete all groups and chats? This cannot be undone.",
-      confirmText: "Clear all",
+      confirmText: "Delete All",
       cancelText: "Cancel",
       danger: true,
     });
