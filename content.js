@@ -631,7 +631,7 @@ style.textContent = `
   }
   .req.dragging{ opacity:.6; }
 
-  /* Заголовок элемента — на всю длину; dblclick = редактирование */
+  /* Заголовок элемента — на всю длину */
   .req .title{
     font-size:12px; font-weight:600;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -1574,18 +1574,6 @@ openA.addEventListener("click", (e) => {
   location.href = url;
 });
 
-
-  // редактирование
-  li.querySelector(".title").addEventListener("dblclick", async () => {
-    const nt = prompt("Изменить текст:", item.text);
-    if (nt == null) return;
-    const trueFullIdx = idxFromFiltered(visible, s.folders[folderName], q, idxVis);
-    s.folders[folderName][trueFullIdx].text = nt.trim();
-    s.folders[folderName][trueFullIdx].ts = nowTs();
-    await setState(s);
-    stateCache = await getState();
-    render(q);
-  });
 
   // удаление
 li.querySelector('[data-act="del"]').addEventListener("click", async () => {
