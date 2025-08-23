@@ -1597,16 +1597,7 @@ openA.addEventListener("click", (e) => {
 
 
   // deletion
-li.querySelector('[data-act="del"]').addEventListener("click", async () => {
-  const ok = await openConfirmDialog({
-    title: "Delete chat",
-    message: `Delete “${(item && (item.text || item.title)) || "Untitled"}”?`,
-    confirmText: "Delete",
-    cancelText: "Cancel",
-    danger: true
-  });
-  if (!ok) return;
-
+  li.querySelector('[data-act="del"]').addEventListener("click", async () => {
   const trueFullIdx = idxFromFiltered(visible, s.folders[folderName], q, idxVis);
   s.folders[folderName].splice(trueFullIdx, 1);
   await setState(s);
