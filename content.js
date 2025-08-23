@@ -1030,7 +1030,7 @@
       function relabel() {
         const len = (s.folders[folderName] || []).length;
         if (len > 0) {
-          actionBtn.textContent = "Clear";
+          actionBtn.textContent = "Delete All";
           actionBtn.title = "Remove all chats from this group";
         } else {
           actionBtn.textContent = "Delete";
@@ -1045,9 +1045,9 @@
         if (len > 0) {
           // CLEAR CHATS (styled dialog)
           const ok = await openConfirmDialog({
-            title: "Clear all chats",
+            title: "Delete all chats",
             message: `Remove all chats from “${folderName}”?`,
-            confirmText: "Clear",
+            confirmText: "Delete",
             cancelText: "Cancel",
             danger: true,
           });
@@ -1441,12 +1441,12 @@
     }
   });
 
-  // Clear all
+  // Delete all
   panel.querySelector("#clearBtn").addEventListener("click", async () => {
     const ok = await openConfirmDialog({
-      title: "Clear everything",
+      title: "Delete everything",
       message: "Delete all groups and chats? This cannot be undone.",
-      confirmText: "Clear all",
+      confirmText: "Delete All",
       cancelText: "Cancel",
       danger: true,
     });
