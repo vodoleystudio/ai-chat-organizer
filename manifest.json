@@ -2,24 +2,20 @@
   "manifest_version": 3,
   "name": "ChatGPT Groups",
   "version": "1.0.0",
-  "description": "Create Groups from chats on ChatGPT, Claude, Perplexity, Gemini, and DeepSeek.",
+  "description": "Create Groups from chats on ChatGPT, Claude, and Perplexity.",
   "icons": { "128": "icons/icon128.png" },
   "permissions": ["storage"],
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://claude.ai/*",
-    "https://*.perplexity.ai/*",
-    "https://gemini.google.com/*",
-    "https://*.deepseek.com/*"
+    "https://*.perplexity.ai/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "https://chatgpt.com/*",
         "https://claude.ai/*",
-        "https://*.perplexity.ai/*",
-        "https://gemini.google.com/*",
-        "https://*.deepseek.com/*"
+        "https://*.perplexity.ai/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
@@ -31,9 +27,7 @@
       "matches": [
         "https://chatgpt.com/*",
         "https://claude.ai/*",
-        "https://*.perplexity.ai/*",
-        "https://gemini.google.com/*",
-        "https://*.deepseek.com/*"
+        "https://*.perplexity.ai/*"
       ]
     }
   ]

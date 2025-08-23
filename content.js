@@ -4,8 +4,6 @@
     const h = location.hostname;
     if (h.includes("claude.ai")) return "claude";
     if (h.includes("perplexity.ai")) return "perplexity";
-    if (h.includes("gemini.google.com")) return "gemini";
-    if (h.includes("deepseek.com")) return "deepseek";
     return "cgpt";
   })();
 
@@ -15,10 +13,6 @@
         return 'a[href^="/chat/"]';
       case "perplexity":
         return 'a[href^="/search/"]';
-      case "gemini":
-        return 'a[href^="/app"], a[href^="https://gemini.google.com/app"]';
-      case "deepseek":
-        return 'a[href*="/chat"], [data-chat-id], [data-conversation-id]';
       default:
         return 'a[href*="/c/"]';
     }
@@ -141,14 +135,8 @@
       if (url.hostname === "chat.openai.com") url.hostname = "chatgpt.com";
       if (url.hostname === "www.perplexity.ai") url.hostname = "perplexity.ai";
       if (url.hostname === "www.claude.ai") url.hostname = "claude.ai";
-      if (url.hostname === "www.deepseek.com") url.hostname = "deepseek.com";
-      // DeepSeek and Gemini may encode chat IDs in the query or hash, so preserve them
-      if (SITE_ID !== "deepseek" && SITE_ID !== "gemini") {
-        url.search = "";
-      }
-      if (SITE_ID !== "gemini" && SITE_ID !== "deepseek") {
-        url.hash = "";
-      }
+      url.search = "";
+      url.hash = "";
       if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
         url.pathname = url.pathname.slice(0, -1);
       }
@@ -182,26 +170,9 @@
 
     for (const a of anchors) {
       let href = a.getAttribute("href") || "";
-      if (!href && SITE_ID === "deepseek") {
-        const cid =
-          a.dataset?.chatId ||
-          a.dataset?.conversationId ||
-          a.dataset?.cid ||
-          a.dataset?.id;
-        if (cid) href = `/a/chat#${cid}`;
-      }
       try {
         if (href && !/^https?:\/\//.test(href))
           href = new URL(href, location.origin).toString();
-      } catch {}
-      try {
-        const u = new URL(href);
-        if (
-          (SITE_ID === "deepseek" && /^\/(?:a\/)?chat\/?$/.test(u.pathname) && !u.search && !u.hash) ||
-          (SITE_ID === "gemini" && /^\/app\/?$/.test(u.pathname) && !u.search && !u.hash)
-        ) {
-          continue;
-        }
       } catch {}
 
       // title: use aria-label/title, then own text node, then first child's text
