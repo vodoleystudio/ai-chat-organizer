@@ -227,6 +227,7 @@
       }
     }
     const anchors = document.querySelectorAll(CHAT_LINK_SELECTOR);
+    const current = normalizeUrl(getCurrentUrl());
     for (const a of anchors) {
       let href = a.getAttribute("href") || "";
       try {
@@ -234,7 +235,7 @@
           href = new URL(href, location.origin).toString();
       } catch {}
       const nurl = normalizeUrl(href);
-      if (saved.has(nurl)) a.classList.add("cgpt-chat-saved");
+      if (saved.has(nurl) && nurl !== current) a.classList.add("cgpt-chat-saved");
       else a.classList.remove("cgpt-chat-saved");
     }
   }
