@@ -5,6 +5,9 @@
   "description": "Create Groups from chats on ChatGPT, Claude, Perplexity, and GitHub Copilot with AI Chat Organizer.",
   "icons": { "128": "icons/icon128.png" },
   "permissions": ["storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://claude.ai/*",
@@ -25,7 +28,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["panel.html", "panel.css", "icons/icon128.png"],
+      "resources": ["panel.html", "panel.css", "icons/icon128.png", "export.html"],
       "matches": [
         "https://chatgpt.com/*",
         "https://claude.ai/*",
