@@ -1584,7 +1584,7 @@
   panel.querySelector("#clearBtn").addEventListener("click", async () => {
     const ok = await openConfirmDialog({
       title: "Delete everything",
-      message: "Delete all groups and chats? This cannot be undone.",
+      message: "Delete all groups and chats? This cannot be undone.\n\nTip: Consider exporting your data first using the Export button to backup your chats before deleting.",
       confirmText: "Delete All",
       cancelText: "Cancel",
       danger: true,

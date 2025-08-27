@@ -253,9 +253,23 @@ label.like-button:hover {
   padding: 10px;
   background: var(--surface, #1b1b1b);
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer .footer-buttons {
+  display: flex;
   gap: 8px;
   align-items: center;
   justify-content: center;
+}
+
+.footer .footer-credits {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+  text-align: center;
 }
 #importLabel {
   display: inline-flex;
@@ -277,6 +291,21 @@ label.like-button:hover {
   background: #8a2d2d;
   border: 1px solid var(--border, #fff);
   color: #fff;
+}
+
+.footer-credits {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+  text-align: center;
+}
+
+.footer-credits a {
+  color: var(--accent, #ffffff);
+  text-decoration: none;
+}
+
+.footer-credits a:hover {
+  text-decoration: underline;
 }
 
 .drop-target {
