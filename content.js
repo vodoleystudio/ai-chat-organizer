@@ -252,34 +252,41 @@
   // Remove chats from groups when they are deleted from the site sidebar
   const pendingDeletedChats = new Set();
   let deletedCleanupTimer = null;
+  async function processDeletedChats() {
+    if (!stateCache) return false;
+    const existing = new Set(getSidebarChats().map((c) => c.nurl));
+    const s = stateCache;
+    let changed = false;
+    for (const nurl of pendingDeletedChats) {
+      if (existing.has(nurl)) continue;
+      for (const folderName of s.order) {
+        const arr = s.folders[folderName] || [];
+        const idx = arr.findIndex(
+          (it) =>
+            it &&
+            it.type === "page" &&
+            (it.nurl || normalizeUrl(it.url || "")) === nurl,
+        );
+        if (idx !== -1) {
+          arr.splice(idx, 1);
+          changed = true;
+        }
+      }
+    }
+    pendingDeletedChats.clear();
+    if (changed) {
+      await setState(s);
+      stateCache = await getState();
+    }
+    return changed;
+  }
+
   function scheduleDeletedCleanup() {
     if (deletedCleanupTimer) clearTimeout(deletedCleanupTimer);
     deletedCleanupTimer = setTimeout(async () => {
       deletedCleanupTimer = null;
-      if (!stateCache) return;
-      const existing = new Set(getSidebarChats().map((c) => c.nurl));
-      const s = stateCache;
-      let changed = false;
-      for (const nurl of pendingDeletedChats) {
-        if (existing.has(nurl)) continue;
-        for (const folderName of s.order) {
-          const arr = s.folders[folderName] || [];
-          const idx = arr.findIndex(
-            (it) =>
-              it &&
-              it.type === "page" &&
-              (it.nurl || normalizeUrl(it.url || "")) === nurl,
-          );
-          if (idx !== -1) {
-            arr.splice(idx, 1);
-            changed = true;
-          }
-        }
-      }
-      pendingDeletedChats.clear();
+      const changed = await processDeletedChats();
       if (changed) {
-        await setState(s);
-        stateCache = await getState();
         render(panel.querySelector("#searchInput").value || "");
       }
     }, 500);
@@ -1549,7 +1556,22 @@
 
   // Export
   panel.querySelector("#exportBtn").addEventListener("click", async () => {
-    const s = await getState();
+    // If there's pending cleanup, process it immediately before export
+    if (pendingDeletedChats.size > 0) {
+      // Cancel any scheduled cleanup and process immediately
+      if (deletedCleanupTimer) {
+        clearTimeout(deletedCleanupTimer);
+        deletedCleanupTimer = null;
+      }
+      
+      // Process pending deletions immediately
+      const changed = await processDeletedChats();
+      if (changed) {
+        render(panel.querySelector("#searchInput").value || "");
+      }
+    }
+    
+    const s = stateCache || await getState();
     const blob = new Blob([JSON.stringify(s, null, 2)], {
       type: "application/json",
     });
