@@ -409,8 +409,20 @@
     // initial list
     renderOptions(filterChatsBySubstring(""));
 
+    // Prevent keyboard events from propagating to the main page
+    searchEl.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    searchEl.addEventListener("keyup", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+
     // filter
-    searchEl.addEventListener("input", () => {
+    searchEl.addEventListener("input", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       const q = searchEl.value;
       const list = filterChatsBySubstring(q);
       renderOptions(list);
@@ -478,10 +490,35 @@
     inp.focus();
     inp.setSelectionRange(0, inp.value.length);
 
+    // Prevent keyboard events from propagating to the main page
+    inp.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    inp.addEventListener("keyup", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    inp.addEventListener("input", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+
+    colorText.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    colorText.addEventListener("keyup", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+
     colorPicker.addEventListener("input", () => {
       colorText.value = colorPicker.value;
     });
-    colorText.addEventListener("input", () => {
+    colorText.addEventListener("input", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       const v = colorText.value.trim();
       if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) {
         colorPicker.value = v;
@@ -654,11 +691,36 @@
 
     nameEl.focus();
 
+    // Prevent keyboard events from propagating to the main page
+    nameEl.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    nameEl.addEventListener("keyup", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    nameEl.addEventListener("input", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+
+    colorText.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    colorText.addEventListener("keyup", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+
     // sync color <-> text
     colorPicker.addEventListener("input", () => {
       colorText.value = colorPicker.value;
     });
-    colorText.addEventListener("input", () => {
+    colorText.addEventListener("input", (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       const v = colorText.value.trim();
       if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) colorPicker.value = v;
     });
@@ -1460,7 +1522,18 @@
   });
 
   // Search
-  panel.querySelector("#searchInput").addEventListener("input", (e) => {
+  const searchInput = panel.querySelector("#searchInput");
+  searchInput.addEventListener("keydown", (e) => {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  });
+  searchInput.addEventListener("keyup", (e) => {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  });
+  searchInput.addEventListener("input", (e) => {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
     render(e.target.value);
   });
 
