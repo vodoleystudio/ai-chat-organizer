@@ -22,6 +22,7 @@
   })();
   const STORAGE_KEY = `${SITE_ID}_groups_v1`;
   const STORAGE_KEY_OPEN = `${SITE_ID}_groups_open_v1`;
+  const STORAGE_KEY_BUTTON_POS = `${SITE_ID}_button_position_v1`;
 
   // Default structure for stored data.
   const DEFAULT_STATE = {
@@ -53,6 +54,8 @@
   const setOpenState = (isOpen) => storageSet(STORAGE_KEY_OPEN, !!isOpen);
   const getState = () => storageGet(STORAGE_KEY, DEFAULT_STATE);
   const setState = (state) => storageSet(STORAGE_KEY, state);
+  const getButtonPosition = () => storageGet(STORAGE_KEY_BUTTON_POS, 0); // 0 = center, -200 = up, +200 = down
+  const setButtonPosition = (offset) => storageSet(STORAGE_KEY_BUTTON_POS, offset);
 
   // ---- Utilities ----
   const nowTs = () => Date.now();
@@ -860,6 +863,11 @@
     setOpenState(false);
   }
 
+  async function updateButtonPosition(offset) {
+    await setButtonPosition(offset);
+    toggleBtn.style.setProperty("--button-offset", `${offset}px`);
+  }
+
   let stateCache = null;
   let dragData = null; // { type:'chat', fromFolder, fromIndex }
   let folderDrag = null; // { fromName, fromIndex }
@@ -1547,6 +1555,17 @@
     render(e.target.value);
   });
 
+  // Position controls
+  panel.querySelector("#posUpBtn").addEventListener("click", () => {
+    updateButtonPosition(-200);
+  });
+  panel.querySelector("#posDownBtn").addEventListener("click", () => {
+    updateButtonPosition(200);
+  });
+  panel.querySelector("#posCenterBtn").addEventListener("click", () => {
+    updateButtonPosition(0);
+  });
+
   // Export
   panel.querySelector("#exportBtn").addEventListener("click", async () => {
     const s = await getState();
@@ -1600,6 +1619,10 @@
   (async () => {
     stateCache = await getState();
     render();
+
+    // Apply saved button position
+    const buttonOffset = await getButtonPosition();
+    toggleBtn.style.setProperty("--button-offset", `${buttonOffset}px`);
 
     const wasOpen = await getOpenState();
     if (wasOpen) {

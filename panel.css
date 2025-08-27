@@ -75,6 +75,13 @@
   color: var(--text-weak, #cfe);
 }
 
+/* Position controls */
+.position-controls {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
 /* Body */
 .cgpt-body {
   flex: 1;
@@ -430,7 +437,7 @@ label.like-button:hover {
 .cgpt-toggle {
   position: fixed;
   right: 12px;
-  top: 50%;
+  top: calc(50% + var(--button-offset, 0px));
   transform: translateY(-50%);
 
   width: 48px !important;
