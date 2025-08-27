@@ -1,13 +1,11 @@
 // Background service worker for AI Chat Organizer
-// Sets uninstall URL to show data export instructions when extension is removed
+// Handles extension initialization
 //
-// When users uninstall the extension, Chrome will automatically open export.html
-// which provides instructions for data export and explains that data must be
-// exported before uninstalling (since chrome.storage.local becomes inaccessible
-// after extension removal).
+// Note: Previously attempted to set an uninstall URL to export.html, but Chrome
+// doesn't allow chrome-extension:// URLs for security reasons. Users should
+// export their data manually before uninstalling via the extension panel.
 
 chrome.runtime.onInstalled.addListener(() => {
-  // Set the uninstall URL to the export page
-  const uninstallUrl = chrome.runtime.getURL('export.html');
-  chrome.runtime.setUninstallURL(uninstallUrl);
+  // Extension initialization completed
+  // Note: Uninstall URL cannot use chrome-extension:// protocol for security reasons
 });
