@@ -822,7 +822,7 @@
   toggleBtn.className = "cgpt-toggle";
   toggleBtn.title = "AI Chat Organizer";
   toggleBtn.style.backgroundImage = `url("${chrome.runtime.getURL("icons/icon128.png")}")`;
-  toggleBtn.style.backgroundSize = "32px 32px";
+  toggleBtn.style.backgroundSize = "24px 24px";
   toggleBtn.style.backgroundRepeat = "no-repeat";
   toggleBtn.style.backgroundPosition = "center";
   shadow.appendChild(toggleBtn);
