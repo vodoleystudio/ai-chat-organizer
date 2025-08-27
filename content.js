@@ -62,6 +62,73 @@
       minute: "2-digit",
     });
 
+  // ---- Universal Focus Trap ----
+  function createFocusTrap(modalElement) {
+    // Find all focusable elements within the modal
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    
+    let focusableElements = [];
+    let firstFocusableElement = null;
+    let lastFocusableElement = null;
+    let previousActiveElement = document.activeElement;
+    
+    function updateFocusableElements() {
+      focusableElements = Array.from(modalElement.querySelectorAll(focusableSelector))
+        .filter(el => !el.disabled && el.offsetParent !== null);
+      firstFocusableElement = focusableElements[0];
+      lastFocusableElement = focusableElements[focusableElements.length - 1];
+    }
+    
+    function handleKeyDown(e) {
+      if (e.key !== 'Tab') return;
+      
+      updateFocusableElements();
+      
+      if (focusableElements.length === 0) return;
+      
+      if (e.shiftKey) {
+        // Shift+Tab: going backwards
+        if (document.activeElement === firstFocusableElement) {
+          e.preventDefault();
+          lastFocusableElement.focus();
+        }
+      } else {
+        // Tab: going forwards
+        if (document.activeElement === lastFocusableElement) {
+          e.preventDefault();
+          firstFocusableElement.focus();
+        }
+      }
+    }
+    
+    function activate() {
+      updateFocusableElements();
+      modalElement.addEventListener('keydown', handleKeyDown);
+      
+      // Set initial focus to first focusable element
+      if (firstFocusableElement) {
+        setTimeout(() => firstFocusableElement.focus(), 0);
+      }
+    }
+    
+    function deactivate() {
+      modalElement.removeEventListener('keydown', handleKeyDown);
+      
+      // Restore focus to previously active element
+      if (previousActiveElement && previousActiveElement.focus) {
+        previousActiveElement.focus();
+      }
+    }
+    
+    return {
+      activate,
+      deactivate,
+      setInitialFocus: (element) => {
+        setTimeout(() => element.focus(), 0);
+      }
+    };
+  }
+
   function getCurrentUrl() {
     return location.href;
   }
@@ -95,8 +162,13 @@
 
       const btnOk = modal.querySelector("#cgptOk");
       const btnCancel = modal.querySelector("#cgptCancel");
+      
+      // Create and activate focus trap
+      const focusTrap = createFocusTrap(modal);
+      focusTrap.activate();
 
       function close(val) {
+        focusTrap.deactivate();
         overlay.remove();
         resolve(val);
       }
@@ -117,8 +189,8 @@
         }
       });
 
-      // focus on "OK"
-      setTimeout(() => btnOk.focus(), 0);
+      // Set initial focus on "OK" button
+      focusTrap.setInitialFocus(btnOk);
     });
   }
 
@@ -426,13 +498,40 @@
       const url = opt.value;
       const title = opt.dataset.title || "Untitled";
       await moveOrInsertPageByUrl(targetFolder, url, title);
+      focusTrap.deactivate();
       overlay.remove();
     });
 
     // close
-    cancelBtn.addEventListener("click", () => overlay.remove());
+    cancelBtn.addEventListener("click", () => {
+      focusTrap.deactivate();
+      overlay.remove();
+    });
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) {
+        focusTrap.deactivate();
+        overlay.remove();
+      }
+    });
+    
+    // Create and activate focus trap
+    const focusTrap = createFocusTrap(modal);
+    focusTrap.activate();
+    
+    // Set initial focus to search input
+    focusTrap.setInitialFocus(searchEl);
+    
+    // Add keyboard navigation
+    modal.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        focusTrap.deactivate();
+        overlay.remove();
+      }
+      if (e.key === "Enter" && document.activeElement !== addBtn) {
+        e.preventDefault();
+        addBtn.click();
+      }
     });
   }
 
@@ -475,8 +574,14 @@
     const btnCancel = modal.querySelector("#rnCancel");
 
     inp.value = oldName;
-    inp.focus();
-    inp.setSelectionRange(0, inp.value.length);
+    
+    // Create and activate focus trap
+    const focusTrap = createFocusTrap(modal);
+    focusTrap.activate();
+    
+    // Set initial focus and selection
+    focusTrap.setInitialFocus(inp);
+    setTimeout(() => inp.setSelectionRange(0, inp.value.length), 0);
 
     colorPicker.addEventListener("input", () => {
       colorText.value = colorPicker.value;
@@ -533,13 +638,20 @@
         setTimeout(() => (sec.style.outline = ""), 900);
       }
 
+      focusTrap.deactivate();
       overlay.remove();
     }
 
     btnSave.addEventListener("click", commit);
-    btnCancel.addEventListener("click", () => overlay.remove());
+    btnCancel.addEventListener("click", () => {
+      focusTrap.deactivate();
+      overlay.remove();
+    });
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) {
+        focusTrap.deactivate();
+        overlay.remove();
+      }
     });
     modal.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -548,6 +660,7 @@
       }
       if (e.key === "Escape") {
         e.preventDefault();
+        focusTrap.deactivate();
         overlay.remove();
       }
     });
@@ -652,7 +765,12 @@
     const btnCreate = modal.querySelector("#nfCreate");
     const btnCancel = modal.querySelector("#nfCancel");
 
-    nameEl.focus();
+    // Create and activate focus trap
+    const focusTrap = createFocusTrap(modal);
+    focusTrap.activate();
+    
+    // Set initial focus to name input
+    focusTrap.setInitialFocus(nameEl);
 
     // sync color <-> text
     colorPicker.addEventListener("input", () => {
@@ -701,13 +819,20 @@
         setTimeout(() => (sec.style.outline = ""), 900);
       }
 
+      focusTrap.deactivate();
       overlay.remove();
     }
 
     btnCreate.addEventListener("click", commit);
-    btnCancel.addEventListener("click", () => overlay.remove());
+    btnCancel.addEventListener("click", () => {
+      focusTrap.deactivate();
+      overlay.remove();
+    });
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) {
+        focusTrap.deactivate();
+        overlay.remove();
+      }
     });
     modal.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -716,6 +841,7 @@
       }
       if (e.key === "Escape") {
         e.preventDefault();
+        focusTrap.deactivate();
         overlay.remove();
       }
     });
