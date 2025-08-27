@@ -820,7 +820,7 @@
   // Toggle button
   const toggleBtn = document.createElement("button");
   toggleBtn.className = "cgpt-toggle";
-  toggleBtn.title = "ChatGPT Groups";
+  toggleBtn.title = "AI Chat Organizer";
   toggleBtn.textContent = "📂";
   shadow.appendChild(toggleBtn);
 
