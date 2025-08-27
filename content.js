@@ -836,6 +836,19 @@
   let initialOffset = 0;
   const MAX_OFFSET = 200; // Max 200px up or down from center
 
+  // Function to extract offset from calc() style
+  function extractOffsetFromStyle(style) {
+    if (!style || !style.includes('calc(50%')) return 0;
+    
+    // Handle both "calc(50% + -100px)" and "calc(50% - 100px)" formats
+    const match = style.match(/calc\(50%\s*([+-])\s*(-?\d+)px\)/);
+    if (match) {
+      const sign = match[1] === '+' ? 1 : -1;
+      const value = parseInt(match[2]);
+      return sign * value;
+    }
+    return 0;
+  }
   // Function to update toggle button position
   function updateTogglePosition(offset) {
     // Clamp offset to ±200px
@@ -855,7 +868,7 @@
     e.preventDefault();
     isDraggingToggle = true;
     dragStartY = e.clientY;
-    initialOffset = parseFloat(toggleBtn.style.top?.match(/calc\(50% \+ (-?\d+)px\)/)?.[1] || "0");
+    initialOffset = extractOffsetFromStyle(toggleBtn.style.top);
     
     toggleBtn.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
@@ -880,14 +893,14 @@
     document.body.style.userSelect = "";
     
     // Save the final position
-    const finalOffset = parseFloat(toggleBtn.style.top?.match(/calc\(50% \+ (-?\d+)px\)/)?.[1] || "0");
+    const finalOffset = extractOffsetFromStyle(toggleBtn.style.top);
     await setTogglePosition(finalOffset);
   });
 
   // Prevent click event when dragging
   toggleBtn.addEventListener("click", (e) => {
     // If we moved more than 5px, prevent the click (it was a drag)
-    const currentOffset = parseFloat(toggleBtn.style.top?.match(/calc\(50% \+ (-?\d+)px\)/)?.[1] || "0");
+    const currentOffset = extractOffsetFromStyle(toggleBtn.style.top);
     if (Math.abs(currentOffset - initialOffset) > 5) {
       e.preventDefault();
       e.stopPropagation();
