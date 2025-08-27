@@ -821,7 +821,10 @@
   const toggleBtn = document.createElement("button");
   toggleBtn.className = "cgpt-toggle";
   toggleBtn.title = "AI Chat Organizer";
-  toggleBtn.textContent = "📂";
+  toggleBtn.style.backgroundImage = `url("${chrome.runtime.getURL("icons/icon128.png")}")`;
+  toggleBtn.style.backgroundSize = "32px 32px";
+  toggleBtn.style.backgroundRepeat = "no-repeat";
+  toggleBtn.style.backgroundPosition = "center";
   shadow.appendChild(toggleBtn);
 
   // Panel
