@@ -652,7 +652,15 @@
     const btnCreate = modal.querySelector("#nfCreate");
     const btnCancel = modal.querySelector("#nfCancel");
 
-    nameEl.focus();
+    // Delayed focus to avoid conflicts with site's focus management (especially Claude.ai)
+    setTimeout(() => {
+      nameEl.focus();
+      // For Claude.ai, ensure focus stays in the input
+      if (SITE_ID === "claude") {
+        // Additional focus management for Claude.ai
+        setTimeout(() => nameEl.focus(), 100);
+      }
+    }, 0);
 
     // sync color <-> text
     colorPicker.addEventListener("input", () => {
@@ -701,13 +709,23 @@
         setTimeout(() => (sec.style.outline = ""), 900);
       }
 
+      // Clean up focus listener if it exists
+      if (overlay._cleanupFocus) overlay._cleanupFocus();
       overlay.remove();
     }
 
     btnCreate.addEventListener("click", commit);
-    btnCancel.addEventListener("click", () => overlay.remove());
+    btnCancel.addEventListener("click", () => {
+      // Clean up focus listener if it exists
+      if (overlay._cleanupFocus) overlay._cleanupFocus();
+      overlay.remove();
+    });
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) {
+        // Clean up focus listener if it exists
+        if (overlay._cleanupFocus) overlay._cleanupFocus();
+        overlay.remove();
+      }
     });
     modal.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -716,9 +734,42 @@
       }
       if (e.key === "Escape") {
         e.preventDefault();
+        // Clean up focus listener if it exists
+        if (overlay._cleanupFocus) overlay._cleanupFocus();
         overlay.remove();
       }
     });
+
+    // Add focus trapping and management specifically for Claude.ai
+    if (SITE_ID === "claude") {
+      // Prevent focus from leaving the modal
+      modal.addEventListener("focusout", (e) => {
+        // If focus is leaving the modal, bring it back to the name input
+        setTimeout(() => {
+          if (!modal.contains(document.activeElement)) {
+            nameEl.focus();
+          }
+        }, 0);
+      });
+
+      // Listen for any focus changes on the page and redirect back to modal
+      const focusListener = (e) => {
+        // If focus goes to an element outside the shadow DOM, redirect it back
+        if (!shadow.contains(e.target) && modal.parentNode) {
+          e.preventDefault();
+          e.stopPropagation();
+          nameEl.focus();
+        }
+      };
+
+      // Add the listener and clean it up when modal is removed
+      document.addEventListener("focusin", focusListener, true);
+      
+      // Store the cleanup function on the overlay for later removal
+      overlay._cleanupFocus = () => {
+        document.removeEventListener("focusin", focusListener, true);
+      };
+    }
   }
 
   function getCurrentCanonicalUrl() {
