@@ -12,4 +12,5 @@ AI Chat Organizer – a sleek Chrome extension that keeps your ChatGPT, Claude, 
 
 <br>Thank you!
 
-<br>Created with love by https://www.vodoleystudio.com
+<br>Created with 🧡 by https://www.vodoleystudio.com
+<br>ENJOY!
