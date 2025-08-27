@@ -4,6 +4,7 @@
     const h = location.hostname;
     if (h.includes("claude.ai")) return "claude";
     if (h.includes("perplexity.ai")) return "perplexity";
+    if (h.includes("github.com")) return "github";
     return "cgpt";
   })();
 
@@ -13,6 +14,8 @@
         return 'a[href^="/chat/"]';
       case "perplexity":
         return 'a[href^="/search/"]';
+      case "github":
+        return 'a[href*="/copilot/c/"]';
       default:
         return 'a[href*="/c/"]';
     }
@@ -124,7 +127,10 @@
 
   function getConversationTitleFallback() {
     return (
-      document.title.replace(/\s+\|\s+ChatGPT.*$/i, "").trim() || "Untitled"
+      document.title
+        .replace(/\s+\|\s+ChatGPT.*$/i, "")
+        .replace(/\s+\|\s+GitHub.*$/i, "")
+        .trim() || "Untitled"
     );
   }
 
@@ -135,6 +141,7 @@
       if (url.hostname === "chat.openai.com") url.hostname = "chatgpt.com";
       if (url.hostname === "www.perplexity.ai") url.hostname = "perplexity.ai";
       if (url.hostname === "www.claude.ai") url.hostname = "claude.ai";
+      if (url.hostname === "www.github.com") url.hostname = "github.com";
       url.search = "";
       url.hash = "";
       if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
