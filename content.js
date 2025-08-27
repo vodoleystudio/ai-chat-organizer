@@ -22,6 +22,7 @@
   })();
   const STORAGE_KEY = `${SITE_ID}_groups_v1`;
   const STORAGE_KEY_OPEN = `${SITE_ID}_groups_open_v1`;
+  const STORAGE_KEY_TOGGLE_POS = `${SITE_ID}_toggle_position_v1`;
 
   // Default structure for stored data.
   const DEFAULT_STATE = {
@@ -53,6 +54,8 @@
   const setOpenState = (isOpen) => storageSet(STORAGE_KEY_OPEN, !!isOpen);
   const getState = () => storageGet(STORAGE_KEY, DEFAULT_STATE);
   const setState = (state) => storageSet(STORAGE_KEY, state);
+  const getTogglePosition = () => storageGet(STORAGE_KEY_TOGGLE_POS, 0); // 0 = center position
+  const setTogglePosition = (offset) => storageSet(STORAGE_KEY_TOGGLE_POS, offset);
 
   // ---- Utilities ----
   const nowTs = () => Date.now();
@@ -827,6 +830,75 @@
   toggleBtn.style.backgroundPosition = "center";
   shadow.appendChild(toggleBtn);
 
+  // ===== Toggle button drag functionality =====
+  let isDraggingToggle = false;
+  let dragStartY = 0;
+  let initialOffset = 0;
+  const MAX_OFFSET = 200; // Max 200px up or down from center
+
+  // Function to update toggle button position
+  function updateTogglePosition(offset) {
+    // Clamp offset to ±200px
+    offset = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, offset));
+    toggleBtn.style.top = `calc(50% + ${offset}px)`;
+    return offset;
+  }
+
+  // Load saved position on initialization
+  async function initTogglePosition() {
+    const savedOffset = await getTogglePosition();
+    updateTogglePosition(savedOffset);
+  }
+
+  // Mouse down on toggle button
+  toggleBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    isDraggingToggle = true;
+    dragStartY = e.clientY;
+    initialOffset = parseFloat(toggleBtn.style.top?.match(/calc\(50% \+ (-?\d+)px\)/)?.[1] || "0");
+    
+    toggleBtn.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+  });
+
+  // Mouse move for dragging
+  document.addEventListener("mousemove", (e) => {
+    if (!isDraggingToggle) return;
+    
+    e.preventDefault();
+    const deltaY = e.clientY - dragStartY;
+    const newOffset = initialOffset + deltaY;
+    updateTogglePosition(newOffset);
+  });
+
+  // Mouse up to end dragging
+  document.addEventListener("mouseup", async (e) => {
+    if (!isDraggingToggle) return;
+    
+    isDraggingToggle = false;
+    toggleBtn.style.cursor = "pointer";
+    document.body.style.userSelect = "";
+    
+    // Save the final position
+    const finalOffset = parseFloat(toggleBtn.style.top?.match(/calc\(50% \+ (-?\d+)px\)/)?.[1] || "0");
+    await setTogglePosition(finalOffset);
+  });
+
+  // Prevent click event when dragging
+  toggleBtn.addEventListener("click", (e) => {
+    // If we moved more than 5px, prevent the click (it was a drag)
+    const currentOffset = parseFloat(toggleBtn.style.top?.match(/calc\(50% \+ (-?\d+)px\)/)?.[1] || "0");
+    if (Math.abs(currentOffset - initialOffset) > 5) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    openPanel();
+  });
+
+  // Initialize position
+  initTogglePosition();
+
   // Panel
   const panel = document.createElement("div");
   panel.className = "cgpt-panel hidden";
@@ -1523,7 +1595,7 @@
   }
 
   // ---- Events ----
-  toggleBtn.addEventListener("click", openPanel);
+  // Note: toggleBtn click event is handled inline with drag functionality
   panel.querySelector("#closeBtn").addEventListener("click", closePanel);
 
   // Create folder
