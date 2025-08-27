@@ -431,7 +431,7 @@ label.like-button:hover {
 .cgpt-toggle {
   position: fixed;
   right: 12px;
-  top: 50%;
+  top: 50%; /* Will be overridden by JavaScript for custom positioning */
   transform: translateY(-50%);
 
   width: 48px !important;
