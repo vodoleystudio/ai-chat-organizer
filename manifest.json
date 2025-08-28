@@ -9,7 +9,7 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://*.perplexity.ai/*",
-    "https://github.com/copilot*"
+      "https://github.com/copilot/*"
   ],
   "content_scripts": [
     {
@@ -17,7 +17,7 @@
         "https://chatgpt.com/*",
         "https://claude.ai/*",
         "https://*.perplexity.ai/*",
-        "https://github.com/copilot*"
+        "https://github.com/copilot/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
@@ -30,7 +30,7 @@
         "https://chatgpt.com/*",
         "https://claude.ai/*",
         "https://*.perplexity.ai/*",
-        "https://github.com/copilot*"
+        "https://github.com/copilot/*"
       ]
     }
   ]
