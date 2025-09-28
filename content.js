@@ -259,39 +259,65 @@
   setInterval(highlightSidebarChats, 2000);
 
   // Remove chats from groups when they are deleted from the site sidebar
-  const pendingDeletedChats = new Set();
+  const pendingDeletedChats = new Map();
   let deletedCleanupTimer = null;
-  function scheduleDeletedCleanup() {
+  function scheduleDeletedCleanup(delay = 600) {
     if (deletedCleanupTimer) clearTimeout(deletedCleanupTimer);
-    deletedCleanupTimer = setTimeout(async () => {
+    const runCleanup = async () => {
       deletedCleanupTimer = null;
-      if (!stateCache) return;
+      if (!stateCache || !pendingDeletedChats.size) return;
+
       const existing = new Set(getSidebarChats().map((c) => c.nurl));
       const s = stateCache;
+      const toKeep = new Map();
       let changed = false;
-      for (const nurl of pendingDeletedChats) {
+      const now = nowTs();
+
+      for (const [nurl, info] of pendingDeletedChats.entries()) {
         if (existing.has(nurl)) continue;
-        for (const folderName of s.order) {
-          const arr = s.folders[folderName] || [];
-          const idx = arr.findIndex(
-            (it) =>
-              it &&
-              it.type === "page" &&
-              (it.nurl || normalizeUrl(it.url || "")) === nurl,
-          );
-          if (idx !== -1) {
-            arr.splice(idx, 1);
-            changed = true;
+
+        const misses = (info?.misses || 0) + 1;
+        const firstMissing = info?.firstMissing || now;
+        const shouldDelete =
+          misses >= 3 || (firstMissing && now - firstMissing >= 4000);
+
+        if (shouldDelete) {
+          for (const folderName of s.order) {
+            const arr = s.folders[folderName] || [];
+            const idx = arr.findIndex(
+              (it) =>
+                it &&
+                it.type === "page" &&
+                (it.nurl || normalizeUrl(it.url || "")) === nurl,
+            );
+            if (idx !== -1) {
+              arr.splice(idx, 1);
+              changed = true;
+            }
           }
+        } else {
+          toKeep.set(nurl, {
+            misses,
+            firstMissing: firstMissing || now,
+          });
         }
       }
+
       pendingDeletedChats.clear();
+      for (const [nurl, info] of toKeep) pendingDeletedChats.set(nurl, info);
+
       if (changed) {
         await setState(s);
         stateCache = await getState();
         render(panel.querySelector("#searchInput").value || "");
       }
-    }, 500);
+
+      if (pendingDeletedChats.size) {
+        scheduleDeletedCleanup(1500);
+      }
+    };
+
+    deletedCleanupTimer = setTimeout(runCleanup, delay);
   }
   const deletionObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
@@ -306,7 +332,19 @@
             if (!/^https?:\/\//.test(href))
               href = new URL(href, location.origin).toString();
           } catch {}
-          pendingDeletedChats.add(normalizeUrl(href));
+          const nurl = normalizeUrl(href);
+          const existing = pendingDeletedChats.get(nurl);
+          if (existing) {
+            pendingDeletedChats.set(nurl, {
+              misses: existing.misses || 0,
+              firstMissing: existing.firstMissing || nowTs(),
+            });
+          } else {
+            pendingDeletedChats.set(nurl, {
+              misses: 0,
+              firstMissing: nowTs(),
+            });
+          }
         }
       }
     }
