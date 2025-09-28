@@ -36,18 +36,60 @@
   };
 
   // Generic wrappers around chrome.storage.local
+  function isContextInvalidError(err) {
+    return (
+      !!err &&
+      typeof err.message === "string" &&
+      err.message.includes("Extension context invalidated")
+    );
+  }
+
   function storageGet(key, defaultValue) {
     return new Promise((resolve) => {
-      chrome.storage.local.get(key, (data) => {
-        const value = data[key];
-        resolve(value === undefined ? defaultValue : value);
-      });
+      const storage = chrome?.storage?.local;
+      if (!storage) {
+        resolve(defaultValue);
+        return;
+      }
+      try {
+        storage.get(key, (data) => {
+          if (isContextInvalidError(chrome?.runtime?.lastError)) {
+            resolve(defaultValue);
+            return;
+          }
+          const value = data?.[key];
+          resolve(value === undefined ? defaultValue : value);
+        });
+      } catch (err) {
+        if (!isContextInvalidError(err)) {
+          console.error(err);
+        }
+        resolve(defaultValue);
+      }
     });
   }
 
   function storageSet(key, value) {
     return new Promise((resolve) => {
-      chrome.storage.local.set({ [key]: value }, resolve);
+      const storage = chrome?.storage?.local;
+      if (!storage) {
+        resolve();
+        return;
+      }
+      try {
+        storage.set({ [key]: value }, () => {
+          if (isContextInvalidError(chrome?.runtime?.lastError)) {
+            resolve();
+            return;
+          }
+          resolve();
+        });
+      } catch (err) {
+        if (!isContextInvalidError(err)) {
+          console.error(err);
+        }
+        resolve();
+      }
     });
   }
 
