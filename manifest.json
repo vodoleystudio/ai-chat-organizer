@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Chat Organizer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Create Groups from chats on ChatGPT, Claude, Perplexity, and GitHub Copilot with AI Chat Organizer.",
   "icons": { "128": "icons/icon128.png" },
   "permissions": ["storage"],
