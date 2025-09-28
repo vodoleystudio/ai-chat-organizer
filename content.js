@@ -23,6 +23,7 @@
   const STORAGE_KEY = `${SITE_ID}_groups_v1`;
   const STORAGE_KEY_OPEN = `${SITE_ID}_groups_open_v1`;
   const STORAGE_KEY_TOGGLE_POS = `${SITE_ID}_toggle_position_v1`;
+  const STORAGE_KEY_ADD_MODAL_ROWS = `${SITE_ID}_add_modal_rows_v1`;
 
   // Default structure for stored data.
   const DEFAULT_STATE = {
@@ -56,6 +57,11 @@
   const setState = (state) => storageSet(STORAGE_KEY, state);
   const getTogglePosition = () => storageGet(STORAGE_KEY_TOGGLE_POS, 0); // 0 = center position
   const setTogglePosition = (offset) => storageSet(STORAGE_KEY_TOGGLE_POS, offset);
+  const getAddModalRows = () =>
+    storageGet(STORAGE_KEY_ADD_MODAL_ROWS, null).then((val) =>
+      typeof val === "number" ? val : null,
+    );
+  const setAddModalRows = (size) => storageSet(STORAGE_KEY_ADD_MODAL_ROWS, size);
 
   // ---- Utilities ----
   const nowTs = () => Date.now();
@@ -335,7 +341,7 @@
     );
   }
 
-  function openAddRequestDialog(targetFolder) {
+  async function openAddRequestDialog(targetFolder) {
     const overlay = document.createElement("div");
     overlay.className = "cgpt-modal-overlay";
     const modal = document.createElement("div");
@@ -351,7 +357,7 @@
         </label>
         <label class="range">
           List height
-          <input type="range" id="chatHeightRange" min="6" max="24" value="8" />
+          <input type="range" id="chatHeightRange" min="6" max="100" value="8" />
           <span id="chatHeightValue">8</span> rows
         </label>
       </div>
@@ -382,10 +388,33 @@
     selectEl.multiple = true;
 
     const defaultSize = Number(selectEl.getAttribute("size")) || 8;
-    selectEl.size = defaultSize;
+    const rangeMin = heightRange
+      ? Math.max(2, Number(heightRange.min) || 2)
+      : 2;
+    const rangeMax = heightRange
+      ? Math.max(rangeMin, Number(heightRange.max) || rangeMin)
+      : 100;
+    const clampRows = (value) =>
+      Math.min(rangeMax, Math.max(rangeMin, Math.round(value)));
+
+    let initialSize = defaultSize;
     if (heightRange) {
-      heightRange.value = String(defaultSize);
-      if (heightValue) heightValue.textContent = String(defaultSize);
+      const storedSize = await getAddModalRows();
+      if (typeof storedSize === "number" && !Number.isNaN(storedSize)) {
+        const normalized = clampRows(storedSize);
+        initialSize = normalized;
+        if (normalized !== storedSize) {
+          void setAddModalRows(normalized);
+        }
+      }
+    }
+
+    selectEl.size = clampRows(initialSize);
+    if (heightRange) {
+      heightRange.value = String(selectEl.size);
+    }
+    if (heightValue) {
+      heightValue.textContent = String(selectEl.size);
     }
 
     // highlight colors
@@ -514,13 +543,15 @@
         e.stopPropagation();
         e.stopImmediatePropagation();
       };
+      const applyHeight = () => {
+        const newSize = clampRows(Number(heightRange.value) || selectEl.size);
+        selectEl.size = newSize;
+        heightRange.value = String(newSize);
+        if (heightValue) heightValue.textContent = String(newSize);
+        void setAddModalRows(newSize);
+      };
       heightRange.addEventListener("keydown", stop);
       heightRange.addEventListener("keyup", stop);
-      const applyHeight = () => {
-        const newSize = Math.max(2, Number(heightRange.value) || defaultSize);
-        selectEl.size = newSize;
-        if (heightValue) heightValue.textContent = String(newSize);
-      };
       heightRange.addEventListener("input", (e) => {
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -531,7 +562,6 @@
         e.stopImmediatePropagation();
         applyHeight();
       });
-      applyHeight();
     }
 
     // add

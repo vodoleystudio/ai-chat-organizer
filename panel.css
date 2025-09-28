@@ -392,7 +392,7 @@ label.like-button:hover {
   min-width: 120px;
 }
 .cgpt-modal .list-controls .range span {
-  min-width: 26px;
+  min-width: 32px;
   text-align: right;
 }
 .cgpt-modal input[type="text"],
