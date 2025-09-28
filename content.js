@@ -243,7 +243,7 @@
       }
     }
     const anchors = document.querySelectorAll(CHAT_LINK_SELECTOR);
-	const current = normalizeUrl(getCurrentUrl());
+    const current = normalizeUrl(getCurrentUrl());
     for (const a of anchors) {
       let href = a.getAttribute("href") || "";
       try {
@@ -259,41 +259,111 @@
   setInterval(highlightSidebarChats, 2000);
 
   // Remove chats from groups when they are deleted from the site sidebar
-  const pendingDeletedChats = new Set();
+  const SIDEBAR_CLEANUP_POLL_MS = 500;
+  const SIDEBAR_CHURN_THRESHOLD = 3; // tolerate small sidebar shifts before acting
+  const PENDING_DELETE_REQUIRED_MISSES = 2; // number of stable polls before deletion
+
+  const pendingDeletedChats = new Map();
   let deletedCleanupTimer = null;
+  let lastSidebarSize = null;
+  let sidebarStableSince = 0;
   function scheduleDeletedCleanup() {
     if (deletedCleanupTimer) clearTimeout(deletedCleanupTimer);
     deletedCleanupTimer = setTimeout(async () => {
       deletedCleanupTimer = null;
       if (!stateCache) return;
-      const existing = new Set(getSidebarChats().map((c) => c.nurl));
-      const s = stateCache;
-      let changed = false;
-      for (const nurl of pendingDeletedChats) {
-        if (existing.has(nurl)) continue;
-        for (const folderName of s.order) {
-          const arr = s.folders[folderName] || [];
-          const idx = arr.findIndex(
-            (it) =>
-              it &&
-              it.type === "page" &&
-              (it.nurl || normalizeUrl(it.url || "")) === nurl,
-          );
-          if (idx !== -1) {
-            arr.splice(idx, 1);
-            changed = true;
-          }
+
+      const now = Date.now();
+      const sidebarChats = getSidebarChats();
+      const existing = new Set(sidebarChats.map((c) => c.nurl));
+      const prevSize = lastSidebarSize;
+      const shrinkAmount =
+        prevSize == null ? 0 : Math.max(0, prevSize - existing.size);
+      const churnDetected =
+        existing.size === 0 ||
+        (prevSize != null && shrinkAmount >= SIDEBAR_CHURN_THRESHOLD);
+
+      lastSidebarSize = existing.size;
+
+      // If chats reappear, drop their pending deletion records immediately.
+      for (const nurl of existing) {
+        if (pendingDeletedChats.has(nurl)) {
+          pendingDeletedChats.delete(nurl);
         }
       }
-      pendingDeletedChats.clear();
+
+      if (!pendingDeletedChats.size) {
+        sidebarStableSince = now;
+        return;
+      }
+
+      if (churnDetected) {
+        sidebarStableSince = 0;
+        scheduleDeletedCleanup();
+        return;
+      }
+
+      if (!sidebarStableSince) {
+        sidebarStableSince = now;
+        scheduleDeletedCleanup();
+        return;
+      }
+
+      if (now - sidebarStableSince < SIDEBAR_CLEANUP_POLL_MS) {
+        scheduleDeletedCleanup();
+        return;
+      }
+
+      const s = stateCache;
+      let changed = false;
+
+      for (const [nurl, meta] of Array.from(pendingDeletedChats.entries())) {
+        if (existing.has(nurl)) {
+          pendingDeletedChats.delete(nurl);
+          continue;
+        }
+
+        const info = meta || {};
+        if (!info.firstMissing) info.firstMissing = now;
+        info.misses = (info.misses || 0) + 1;
+
+        if (info.misses >= PENDING_DELETE_REQUIRED_MISSES) {
+          pendingDeletedChats.delete(nurl);
+          for (const folderName of s.order) {
+            const arr = s.folders[folderName] || [];
+            const idx = arr.findIndex(
+              (it) =>
+                it &&
+                it.type === "page" &&
+                (it.nurl || normalizeUrl(it.url || "")) === nurl,
+            );
+            if (idx !== -1) {
+              arr.splice(idx, 1);
+              changed = true;
+            }
+          }
+        } else {
+          pendingDeletedChats.set(nurl, info);
+        }
+      }
+
       if (changed) {
         await setState(s);
         stateCache = await getState();
         render(panel.querySelector("#searchInput").value || "");
       }
-    }, 500);
+
+      if (pendingDeletedChats.size) {
+        scheduleDeletedCleanup();
+      } else {
+        sidebarStableSince = now;
+      }
+    }, SIDEBAR_CLEANUP_POLL_MS);
   }
   const deletionObserver = new MutationObserver((mutations) => {
+    let sawRemoval = false;
+    let clearedAny = false;
+
     for (const m of mutations) {
       for (const node of m.removedNodes) {
         if (!(node instanceof HTMLElement)) continue;
@@ -306,11 +376,42 @@
             if (!/^https?:\/\//.test(href))
               href = new URL(href, location.origin).toString();
           } catch {}
-          pendingDeletedChats.add(normalizeUrl(href));
+          const nurl = normalizeUrl(href);
+          if (!pendingDeletedChats.has(nurl)) {
+            pendingDeletedChats.set(nurl, { misses: 0, firstMissing: null });
+          }
+          sawRemoval = true;
+        }
+      }
+
+      for (const node of m.addedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+        const anchors = node.matches(CHAT_LINK_SELECTOR)
+          ? [node]
+          : Array.from(node.querySelectorAll?.(CHAT_LINK_SELECTOR) || []);
+        for (const a of anchors) {
+          let href = a.getAttribute("href") || "";
+          try {
+            if (!/^https?:\/\//.test(href))
+              href = new URL(href, location.origin).toString();
+          } catch {}
+          const nurl = normalizeUrl(href);
+          if (pendingDeletedChats.has(nurl)) {
+            pendingDeletedChats.delete(nurl);
+            clearedAny = true;
+          }
         }
       }
     }
-    if (pendingDeletedChats.size) scheduleDeletedCleanup();
+
+    if (sawRemoval) sidebarStableSince = 0;
+
+    if (pendingDeletedChats.size) {
+      scheduleDeletedCleanup();
+    } else if (clearedAny && deletedCleanupTimer) {
+      clearTimeout(deletedCleanupTimer);
+      deletedCleanupTimer = null;
+    }
   });
   deletionObserver.observe(document.body, { childList: true, subtree: true });
 
