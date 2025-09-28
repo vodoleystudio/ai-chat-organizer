@@ -369,6 +369,32 @@ label.like-button:hover {
   gap: 8px;
   align-items: center;
 }
+.cgpt-modal .list-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.cgpt-modal .list-controls .checkbox,
+.cgpt-modal .list-controls .range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 220px;
+}
+.cgpt-modal .list-controls .range {
+  justify-content: flex-end;
+  gap: 10px;
+}
+.cgpt-modal .list-controls .range input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+.cgpt-modal .list-controls .range span {
+  min-width: 32px;
+  text-align: right;
+}
 .cgpt-modal input[type="text"],
 .cgpt-modal input[type="search"],
 .cgpt-modal select {
@@ -379,6 +405,16 @@ label.like-button:hover {
   padding: 8px 10px;
   width: 100%;
   box-sizing: border-box;
+}
+.cgpt-modal input[type="checkbox"],
+.cgpt-modal input[type="range"] {
+  cursor: pointer;
+}
+.cgpt-modal input[type="checkbox"] {
+  accent-color: #ffffff;
+}
+.cgpt-modal input[type="range"] {
+  accent-color: #ffffff;
 }
 .cgpt-modal select option {
   background: #2a2a2a;

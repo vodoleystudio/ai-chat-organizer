@@ -23,6 +23,7 @@
   const STORAGE_KEY = `${SITE_ID}_groups_v1`;
   const STORAGE_KEY_OPEN = `${SITE_ID}_groups_open_v1`;
   const STORAGE_KEY_TOGGLE_POS = `${SITE_ID}_toggle_position_v1`;
+  const STORAGE_KEY_ADD_MODAL_ROWS = `${SITE_ID}_add_modal_rows_v1`;
 
   // Default structure for stored data.
   const DEFAULT_STATE = {
@@ -56,6 +57,11 @@
   const setState = (state) => storageSet(STORAGE_KEY, state);
   const getTogglePosition = () => storageGet(STORAGE_KEY_TOGGLE_POS, 0); // 0 = center position
   const setTogglePosition = (offset) => storageSet(STORAGE_KEY_TOGGLE_POS, offset);
+  const getAddModalRows = () =>
+    storageGet(STORAGE_KEY_ADD_MODAL_ROWS, null).then((val) =>
+      typeof val === "number" ? val : null,
+    );
+  const setAddModalRows = (size) => storageSet(STORAGE_KEY_ADD_MODAL_ROWS, size);
 
   // ---- Utilities ----
   const nowTs = () => Date.now();
@@ -335,7 +341,7 @@
     );
   }
 
-  function openAddRequestDialog(targetFolder) {
+  async function openAddRequestDialog(targetFolder) {
     const overlay = document.createElement("div");
     overlay.className = "cgpt-modal-overlay";
     const modal = document.createElement("div");
@@ -344,6 +350,17 @@
     <h4>Add chat/s to “${targetFolder}”</h4>
     <div class="row">
       <input type="search" id="chatSearch" placeholder="Search by title or description...">
+      <div class="list-controls">
+        <label class="checkbox">
+          <input type="checkbox" id="showOnlyUngrouped" />
+          Show only chats without a group
+        </label>
+        <label class="range">
+          List height
+          <input type="range" id="chatHeightRange" min="6" max="100" value="8" />
+          <span id="chatHeightValue">8</span> rows
+        </label>
+      </div>
       <div class="hint">
         Legend: <span style="background:#5a2f00;color:#fff;border-radius:4px;padding:1px 6px">orange</span> — already in this group,
         <span style="background:#4d4a00;color:#fff;border-radius:4px;padding:1px 6px">yellow</span> — already in another group.<br />
@@ -363,9 +380,42 @@
     const selectEl = modal.querySelector("#chatSelect");
     const cancelBtn = modal.querySelector("#cancelBtn");
     const addBtn = modal.querySelector("#addBtn");
+    const onlyUngroupedCheckbox = modal.querySelector("#showOnlyUngrouped");
+    const heightRange = modal.querySelector("#chatHeightRange");
+    const heightValue = modal.querySelector("#chatHeightValue");
 
     // Allow multi-select via keyboard modifiers.
     selectEl.multiple = true;
+
+    const defaultSize = Number(selectEl.getAttribute("size")) || 8;
+    const rangeMin = heightRange
+      ? Math.max(2, Number(heightRange.min) || 2)
+      : 2;
+    const rangeMax = heightRange
+      ? Math.max(rangeMin, Number(heightRange.max) || rangeMin)
+      : 100;
+    const clampRows = (value) =>
+      Math.min(rangeMax, Math.max(rangeMin, Math.round(value)));
+
+    let initialSize = defaultSize;
+    if (heightRange) {
+      const storedSize = await getAddModalRows();
+      if (typeof storedSize === "number" && !Number.isNaN(storedSize)) {
+        const normalized = clampRows(storedSize);
+        initialSize = normalized;
+        if (normalized !== storedSize) {
+          void setAddModalRows(normalized);
+        }
+      }
+    }
+
+    selectEl.size = clampRows(initialSize);
+    if (heightRange) {
+      heightRange.value = String(selectEl.size);
+    }
+    if (heightValue) {
+      heightValue.textContent = String(selectEl.size);
+    }
 
     // highlight colors
     const COLOR_DEFAULT_BG = "#2a2a2a";
@@ -373,8 +423,14 @@
     const COLOR_HERE_BG = "#5a2f00"; // dark orange
     const COLOR_ELSE_BG = "#4d4a00"; // dark yellow
 
+    let showOnlyUngrouped = false;
+
     function renderOptions(list) {
+      const prevSelected = new Set(
+        Array.from(selectEl.selectedOptions || []).map((opt) => opt.value),
+      );
       selectEl.innerHTML = "";
+      let hasSelectionAfterRender = false;
 
       list.forEach((it) => {
         const opt = document.createElement("option");
@@ -386,6 +442,10 @@
         const loc = findSavedPage(it.url); // { folderName, index } | null
         const inSomeFolder = !!loc;
         const inThisFolder = loc && loc.folderName === targetFolder;
+
+        if (showOnlyUngrouped && inSomeFolder) {
+          return;
+        }
 
         // Text with placement notes
         let suffix = "";
@@ -399,6 +459,11 @@
         opt.textContent = (base + suffix).slice(0, 240);
         opt.dataset.title = it.title;
         if (loc) opt.dataset.inFolder = loc.folderName;
+
+        if (prevSelected.has(opt.value)) {
+          opt.selected = true;
+          hasSelectionAfterRender = true;
+        }
 
         // Highlight by status
         if (inThisFolder) {
@@ -417,7 +482,22 @@
         selectEl.appendChild(opt);
       });
 
-      if (selectEl.options.length) selectEl.selectedIndex = 0;
+      if (!selectEl.options.length) {
+        const emptyOpt = document.createElement("option");
+        emptyOpt.textContent = showOnlyUngrouped
+          ? "No ungrouped chats found"
+          : "No chats found";
+        emptyOpt.disabled = true;
+        selectEl.appendChild(emptyOpt);
+        selectEl.disabled = true;
+        addBtn.disabled = true;
+      } else {
+        selectEl.disabled = false;
+        addBtn.disabled = false;
+        if (!hasSelectionAfterRender) {
+          selectEl.selectedIndex = 0;
+        }
+      }
     }
 
     // initial list
@@ -441,6 +521,48 @@
       const list = filterChatsBySubstring(q);
       renderOptions(list);
     });
+
+    if (onlyUngroupedCheckbox) {
+      const stop = (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      };
+      onlyUngroupedCheckbox.addEventListener("keydown", stop);
+      onlyUngroupedCheckbox.addEventListener("keyup", stop);
+      onlyUngroupedCheckbox.addEventListener("change", (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        showOnlyUngrouped = onlyUngroupedCheckbox.checked;
+        const list = filterChatsBySubstring(searchEl.value);
+        renderOptions(list);
+      });
+    }
+
+    if (heightRange) {
+      const stop = (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      };
+      const applyHeight = () => {
+        const newSize = clampRows(Number(heightRange.value) || selectEl.size);
+        selectEl.size = newSize;
+        heightRange.value = String(newSize);
+        if (heightValue) heightValue.textContent = String(newSize);
+        void setAddModalRows(newSize);
+      };
+      heightRange.addEventListener("keydown", stop);
+      heightRange.addEventListener("keyup", stop);
+      heightRange.addEventListener("input", (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        applyHeight();
+      });
+      heightRange.addEventListener("change", (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        applyHeight();
+      });
+    }
 
     // add
     addBtn.addEventListener("click", async () => {
