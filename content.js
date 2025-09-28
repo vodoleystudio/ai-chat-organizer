@@ -346,9 +346,10 @@
       <input type="search" id="chatSearch" placeholder="Search by title or description...">
       <div class="hint">
         Legend: <span style="background:#5a2f00;color:#fff;border-radius:4px;padding:1px 6px">orange</span> — already in this group,
-        <span style="background:#4d4a00;color:#fff;border-radius:4px;padding:1px 6px">yellow</span> — already in another group.
+        <span style="background:#4d4a00;color:#fff;border-radius:4px;padding:1px 6px">yellow</span> — already in another group.<br />
+        Use Ctrl/Cmd or Shift to select multiple chats.
       </div>
-      <select id="chatSelect" size="8" style="background:#2a2a2a;color:#fff"></select>
+      <select id="chatSelect" size="8" multiple style="background:#2a2a2a;color:#fff"></select>
     </div>
     <div class="actions">
       <button id="addBtn">Add</button>
@@ -362,6 +363,9 @@
     const selectEl = modal.querySelector("#chatSelect");
     const cancelBtn = modal.querySelector("#cancelBtn");
     const addBtn = modal.querySelector("#addBtn");
+
+    // Allow multi-select via keyboard modifiers.
+    selectEl.multiple = true;
 
     // highlight colors
     const COLOR_DEFAULT_BG = "#2a2a2a";
@@ -440,14 +444,30 @@
 
     // add
     addBtn.addEventListener("click", async () => {
-      const opt = selectEl.selectedOptions[0];
-      if (!opt) {
-        alert("Select a chat from the list.");
+      const selected = Array.from(selectEl.selectedOptions || []);
+      if (!selected.length) {
+        alert("Select one or more chats from the list.");
         return;
       }
-      const url = opt.value;
-      const title = opt.dataset.title || "Untitled";
-      await moveOrInsertPageByUrl(targetFolder, url, title);
+
+      const toProcess = selected.filter(
+        (opt) => (opt.dataset.inFolder || "") !== targetFolder,
+      );
+
+      if (!toProcess.length) {
+        alert("All selected chats are already in this group.");
+        return;
+      }
+
+      addBtn.disabled = true;
+      addBtn.textContent = "Adding...";
+
+      for (const opt of toProcess) {
+        const url = opt.value;
+        const title = opt.dataset.title || "Untitled";
+        await moveOrInsertPageByUrl(targetFolder, url, title);
+      }
+
       overlay.remove();
     });
 
